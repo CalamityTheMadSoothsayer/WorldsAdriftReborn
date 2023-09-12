@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Bossa.Travellers.Alliance;
 using Bossa.Travellers.Analytics;
 using Bossa.Travellers.Clock;
@@ -12,9 +11,11 @@ using Bossa.Travellers.Inventory;
 using Bossa.Travellers.Items;
 using Bossa.Travellers.Loot;
 using Bossa.Travellers.Misc;
+using Bossa.Travellers.Motion;
 using Bossa.Travellers.Player;
 using Bossa.Travellers.Refdata;
 using Bossa.Travellers.Rope;
+using Bossa.Travellers.Salvaging;
 using Bossa.Travellers.Scanning;
 using Bossa.Travellers.Ship.Lock;
 using Bossa.Travellers.Social;
@@ -22,6 +23,7 @@ using Bossa.Travellers.Weather;
 using Bossa.Travellers.World;
 using Improbable;
 using Improbable.Collections;
+using Improbable.Corelib.Math;
 using Improbable.Corelib.Metrics;
 using Improbable.Corelib.Worker.Checkout;
 using Improbable.Corelibrary.Activation;
@@ -33,7 +35,6 @@ using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
-using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
 namespace WorldsAdriftRebornGameServer.Game.Components
 {
@@ -47,22 +48,92 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                 {
                     ulong refId = 0;
                     object obj = null;
+    
+                    if(componentId == 1040)
+                    {
+                        // Used By - InventoryVisualiser (reader)
+                        // Known settings are:
+                        // serverAuthoritativeInventory (bool) - Unknown repercussions
+                        Console.WriteLine("Sending authInv bool!");
+                        GamePropertiesState.Data gpData = new GamePropertiesState.Data(new GamePropertiesStateData(new Map<string, string> { ["serverAuthoritativeInventory"] = "true" }));
 
-                    if(componentId == 8065)
+                        obj = gpData;
+                    }
+                    else if(componentId == 1109)
+                    {
+                        // Used By - PlayerExternalDataVisualizer (reader)
+                        // Known settings are:
+                        // ControlVehicleType - TODO: Needs to be changed when mounting something
+                        PilotState.Data psData = new PilotState.Data(new PilotStateData(new EntityId(-1), new EntityId(-1), ControlVehicleType.None));
+
+                        obj = psData;
+                    }
+                    else if(componentId == 1077)
+                    {
+                        // Used By - PlayerExternalDataVisualizer (reader)
+                        // Known settings are:
+                        // alive - TODO: Needs to be changed when dead
+                        HealthState.Data hData = new HealthState.Data(new HealthStateData(100, 100, true, 0f, true, new Improbable.Collections.List<EntityId> { }, 1f, 1f));
+
+                        obj = hData;
+                    }
+                    else if(componentId == 1207)
+                    {
+                        // Used By - PlayerExternalDataVisualizer (reader)
+                        // Known settings are:
+                        // schematics - TODO: Investigate
+                        ShipHullAgentState.Data shData = new ShipHullAgentState.Data(new ShipHullAgentStateData(new Improbable.Collections.List<ShipHullSchematicData> { }, new EntityId(0)));
+
+                        obj = shData;
+                    }
+                    else if(componentId == 1073)
+                    {
+                        // relativeBias - Controls interpolation between the player and their relative gameobject's position
+                        ClientAuthoritativePlayerState.Data capData = new ClientAuthoritativePlayerState.Data(new ClientAuthoritativePlayerStateData(new Improbable.Math.Vector3f(0f, 0f, 0f),
+                            new Improbable.Corelib.Math.Quaternion(0,0,0,0),
+                            new EntityId(2),
+                            1,
+                            0,
+                            new byte[] { },
+                            true,
+                            0,
+                            false,
+                            false,
+                            null));
+                        obj= capData;
+                    }
+                    else if(componentId == 8065)
                     {
                         Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
                         obj = bData;
                     }
                     else if(componentId == 190602)
                     {
-                        TransformStateData tInit = new TransformStateData(new FixedPointVector3(new Improbable.Collections.List<long> { 0, 100, 0 }),
-                                                                new Quaternion32(1),
-                                                                null,
-                                                                new Improbable.Math.Vector3d(0f, 0f, 0f),
-                                                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                                                false,
-                                                                0f);
+                        TransformStateData tInit;
+                        if (entityId == 1)
+                        {
+                            tInit = new TransformStateData(
+                                new FixedPointVector3(new Improbable.Collections.List<long> { 0, 100, 0 }),
+                                new Quaternion32(1),
+                                null,
+                                new Improbable.Math.Vector3d(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                false,
+                                0f);
+                        } else
+                        {
+                            tInit = new TransformStateData(
+                                new FixedPointVector3(new Improbable.Collections.List<long> { 0, 0, 0 }),
+                                new Quaternion32(1),
+                                new Option<Parent>(new Parent(new EntityId(2), "~")),  // ~ is required by the WA client to properly recognise an entity's parent. Most code seems to use this as a fallback but can't be certain.
+                                new Improbable.Math.Vector3d(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                false,
+                                0f);
+                        }
+
                         TransformState.Data tData = new TransformState.Data(tInit);
 
                         obj = tData;
@@ -111,11 +182,23 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                                                                                                                 false));
                         obj = ppData;
                     }
-                    else if(componentId == 1077)
+                    else if(componentId == 2105)
                     {
-                        HealthState.Data hData = new HealthState.Data(new HealthStateData(200, 200, true, 0f, true, new Improbable.Collections.List<EntityId> { }, 1f, 1f));
+                        MultiToolPlayerState.Data mtData = new MultiToolPlayerState.Data(new MultiToolPlayerStateData(true, MultitoolMode.Salvage, 10));
 
-                        obj = hData;
+                        obj = mtData;
+                    }
+                    else if(componentId == 2106)
+                    {
+                        MultitoolSalvagerState.Data msData = new MultitoolSalvagerState.Data(new MultitoolSalvagerStateData(false, false, false));
+
+                        obj = msData;
+                    }
+                    else if(componentId == 2002)
+                    {
+                        MultitoolRepairerState.Data mrData = new MultitoolRepairerState.Data(new MultitoolRepairerStateData(false, false));
+
+                        obj = mrData;
                     }
                     else if(componentId == 1280)
                     {
@@ -131,7 +214,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                                                                                                         new EntityId(0),
                                                                                                         new Improbable.Math.Vector3f(0f, 0f, 0f),
                                                                                                         new Improbable.Math.Coordinates(),
-                                                                                                        1,
+                                                                                                        ItemHelper.SALVAGE_REPAIR_TOOL,
                                                                                                         1));
                         obj = iaData;
                     }
@@ -176,12 +259,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                         obj = mgData;
                     }
-                    else if(componentId == 1109)
-                    {
-                        PilotState.Data psData = new PilotState.Data(new PilotStateData(new EntityId(0), new EntityId(0), ControlVehicleType.None));
-
-                        obj = psData;
-                    }
                     else if(componentId == 1071)
                     {
                         BuilderServerState.Data bsData = new BuilderServerState.Data(new BuilderServerStateData(new EntityId(0)));
@@ -199,12 +276,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         RopeControlPoints.Data rcData = new RopeControlPoints.Data(new RopeControlPointsData(new Improbable.Collections.List<Coordinates> { }, new Improbable.Collections.List<DynamicRopePoint> { }, false, 0f));
 
                         obj = rcData;
-                    }
-                    else if(componentId == 1207)
-                    {
-                        ShipHullAgentState.Data shData = new ShipHullAgentState.Data(new ShipHullAgentStateData(new Improbable.Collections.List<ShipHullSchematicData> { }, new EntityId(0)));
-
-                        obj = shData;
                     }
                     else if(componentId == 2001)
                     {
@@ -322,32 +393,11 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                         obj = fData;
                     }
-                    else if(componentId == 1073)
-                    {
-                        ClientAuthoritativePlayerState.Data capData = new ClientAuthoritativePlayerState.Data(new ClientAuthoritativePlayerStateData(new Improbable.Math.Vector3f(0f, 100f, 0f),
-                                                                                                                                            new Improbable.Corelib.Math.Quaternion(1, 1, 1, 1),
-                                                                                                                                            new EntityId(2),
-                                                                                                                                            1f,
-                                                                                                                                            100,
-                                                                                                                                            new byte[] { },
-                                                                                                                                            false,
-                                                                                                                                            2,
-                                                                                                                                            false,
-                                                                                                                                            false,
-                                                                                                                                            100));
-                        obj= capData;
-                    }
                     else if(componentId == 9005)
                     {
                         SocialWorkerId.Data wiData = new SocialWorkerId.Data(new SocialWorkerIdData("workerId"));
 
                         obj = wiData;
-                    }
-                    else if(componentId == 1040)
-                    {
-                        GamePropertiesState.Data gpData = new GamePropertiesState.Data(new GamePropertiesStateData(new Map<string, string> { }));
-
-                        obj = gpData;
                     }
                     else if(componentId == 6902)
                     {
@@ -385,7 +435,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                                                                                             new Coordinates(0, 0, 0),
                                                                                             1f,
                                                                                             new Vector3f(0,0,0),
-                                                                                            new Vector3f(100f, 100f, 100f),
+                                                                                            new Vector3f(200f, 200f, 200f),
                                                                                             new Option<string>("I Dont know who made this island :("),
                                                                                             false,
                                                                                             new Improbable.Collections.List<IslandDatabank>()
@@ -424,6 +474,11 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         LorePiecesCollectorClientState.Data loreClientData = new LorePiecesCollectorClientState.Data();
                         obj = loreClientData;
+                    }
+                    else if(componentId == 1242)
+                    {
+                        LocationState.Data locData = new LocationState.Data(new AbsoluteLocation(new Coordinates(0, 100, 0), new Quaternion(0, 0,0, 0)), new RelativeLocation(new EntityId(2), new Vector3f(0, 100f, 0), new Quaternion(0, 0, 0,0)), 0f);
+                        obj = locData;
                     }
                     else if (componentId == 8051)
                     {
@@ -466,12 +521,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         SchematicsUnlearnerState.Data susData = new SchematicsUnlearnerState.Data();
 
                         obj = susData;
-                    }
-                    else if(componentId == 1109)
-                    {
-                        PilotState.Data pd = new PilotState.Data(new PilotStateData(new EntityId(10), new EntityId(10), ControlVehicleType.None));
-
-                        obj = pd;
                     }
                     else
                     {

@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
 using Bossa.Travellers.Inventory;
 using Bossa.Travellers.Player;
+using Improbable.Worker;
 using Improbable.Worker.Internal;
+using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
@@ -9,16 +11,20 @@ using WorldsAdriftRebornGameServer.Networking.Wrapper;
 namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
 {
     [RegisterComponentUpdateHandler]
-    internal class InventoryModificationState_Handler : IComponentUpdateHandler<InventoryModificationState, InventoryModificationState.Update, InventoryModificationState.Data>
+    internal class InventoryModificationState_Handler : IComponentUpdateHandler<InventoryModificationState,
+        InventoryModificationState.Update, InventoryModificationState.Data>
     {
+
         public InventoryModificationState_Handler() { Init(1082); }
         protected override void Init( uint ComponentId )
         {
             this.ComponentId = ComponentId;
         }
+        
         public override void HandleUpdate( ENetPeerHandle player, long entityId, InventoryModificationState.Update clientComponentUpdate, InventoryModificationState.Data serverComponentData)
         {
             clientComponentUpdate.ApplyTo(serverComponentData);
+            var inventory = InventoryManager.GetPlayerInventory(player, entityId);
 
             InventoryModificationState.Update serverComponentUpdate = (InventoryModificationState.Update)serverComponentData.ToUpdate();
 
@@ -30,29 +36,31 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
                 Console.WriteLine("[info] lockbox: " + clientComponentUpdate.equipWearable[j].isLockboxItem);
 
                 // send updates to equip the wearables
-                WearableUtilsState.Update storedWearableUtilsState = (WearableUtilsState.Update)((WearableUtilsState.Data)ClientObjects.Instance.Dereference(GameState.Instance.ComponentMap[player][entityId][1280])).ToUpdate();
-                PlayerPropertiesState.Update storedPlayerPropertiesState = (PlayerPropertiesState.Update)((PlayerPropertiesState.Data)ClientObjects.Instance.Dereference(GameState.Instance.ComponentMap[player][entityId][1088])).ToUpdate();
-                InventoryState.Update storedInventoryState = (InventoryState.Update)((InventoryState.Data)ClientObjects.Instance.Dereference(GameState.Instance.ComponentMap[player][entityId][1081])).ToUpdate();
+                var storedWearableUtilsState = Utils.GetStateUpdate<WearableUtilsState, WearableUtilsState.Update, WearableUtilsState.Data>(player, entityId, 1280);
+                // TODO: Support "customisations" from the player properties data object, which also means supporting lockbox
+                var storedPlayerPropertiesState = Utils.GetStateUpdate<PlayerPropertiesState, PlayerPropertiesState.Update, PlayerPropertiesState.Data>(player, entityId, 1088);
 
                 storedWearableUtilsState.SetItemIds(new Improbable.Collections.List<int> { clientComponentUpdate.equipWearable[j].itemId }).SetHealths(new Improbable.Collections.List<float> { 100f }).SetActive(new Improbable.Collections.List<bool> { true });
-                for (int k = 0; k < storedInventoryState.inventoryList.Value.Count; k++)
-                {
-                    if (storedInventoryState.inventoryList.Value[k].itemId == clientComponentUpdate.equipWearable[j].itemId)
-                    {
-                        ScalaSlottedInventoryItem modifiedItem = storedInventoryState.inventoryList.Value[k];
-                        modifiedItem.slotType = ItemHelper.GetItem(storedInventoryState.inventoryList.Value[k].itemTypeId).characterSlot;
+                if (!inventory.GetItem(clientComponentUpdate.equipWearable[j].itemId, out var targetItem)) continue;  // TODO: MAYBE DONT SILENT ERROR
 
-                        storedInventoryState.inventoryList.Value[k] = modifiedItem;
-                    }
-                }
+                targetItem.slotType = ItemHelper.GetItem(targetItem.itemTypeId).characterSlot;
+                
+                inventory.UpdateItem(targetItem);
 
                 // NOTE: its absolutely crucial to send 1081 before 1088, this is because 1081 sets the item slotType to something meaningfull while 1088 expects some meaningful value if it should be equipped
-                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1280, 1081, 1088 }, new List<object> { storedWearableUtilsState, storedInventoryState, storedPlayerPropertiesState });
+                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1280, 1081, 1088 }, new List<object> { storedWearableUtilsState, inventory.Update, storedPlayerPropertiesState });
             }
             for (int j = 0; j < clientComponentUpdate.equipTool.Count; j++)
             {
                 Console.WriteLine("[info] game wants to equip a tool");
                 Console.WriteLine("[info] id: " + clientComponentUpdate.equipTool[j].itemId);
+                
+                var storedPlayerPropertiesState = Utils.GetStateUpdate<PlayerPropertiesState, PlayerPropertiesState.Update, PlayerPropertiesState.Data>(player, entityId, 1088);
+                if (!inventory.GetItem(clientComponentUpdate.equipTool[j].itemId, out var targetItem)) continue; 
+
+                // TODO: IMPORTANT INFO ! THE GAME DOES NOT PROVIDE ANY FUNCTIONALITY FOR UNEQUIPPING A TOOL. THIS IS BECAUSE THIS EVENT IS EXCLUSIVELY USED FOR THE SCANNER. THE SCANNER IS AN ITEM YOU HAVE TO CRAFT AND THEN EQUIP IN VANILLA.
+                
+                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1081, 1088 }, new List<object> { inventory.Update, storedPlayerPropertiesState });
             }
             for (int j = 0; j < clientComponentUpdate.craftItem.Count; j++)
             {
@@ -74,19 +82,63 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
             }
             for (int j = 0; j < clientComponentUpdate.moveItem.Count; j++)
             {
+                var moveItem = clientComponentUpdate.moveItem[j];
                 Console.WriteLine("[info] game wants to move an inventory item");
-                Console.WriteLine("[info] inventoryEntityId: " + clientComponentUpdate.moveItem[j].inventoryEntityId);
-                Console.WriteLine("[info] itemId: " + clientComponentUpdate.moveItem[j].itemId);
-                Console.WriteLine("[info] xPos: " + clientComponentUpdate.moveItem[j].xPos);
-                Console.WriteLine("[info] yPos: " + clientComponentUpdate.moveItem[j].yPos);
-                Console.WriteLine("[info] rotate: " + clientComponentUpdate.moveItem[j].rotate);
+                Console.WriteLine("[info] inventoryEntityId: " + moveItem.inventoryEntityId);
+                Console.WriteLine("[info] itemId: " + moveItem.itemId);
+                Console.WriteLine("[info] xPos: " + moveItem.xPos);
+                Console.WriteLine("[info] yPos: " + moveItem.yPos);
+                Console.WriteLine("[info] rotate: " + moveItem.rotate);
                 Console.WriteLine("[info] isLockboxItem: " + clientComponentUpdate.moveItem[j].isLockboxItem);
+                
+                if (!inventory.GetItem(moveItem.itemId, out var targetItem)) continue;  // TODO: MAYBE DONT SILENT ERROR
+
+                if (moveItem.yPos < 0 || moveItem.xPos < 0)  // 
+                {
+                    inventory.RemoveItem(moveItem.itemId);
+                }
+                else
+                {
+                    targetItem.rotated = moveItem.rotate;  
+                    targetItem.xPosition = moveItem.xPos;
+                    targetItem.yPosition = moveItem.yPos;
+                    if (!inventory.UpdateItem(targetItem))
+                    {
+                        Console.WriteLine("UpdateItem failed");
+                    }
+                }
+                
+                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1081 }, new List<object> { inventory.Update });
             }
             for (int j = 0; j < clientComponentUpdate.removeFromHotBar.Count; j++)
             {
                 Console.WriteLine("[info] game wants to remove from hotbar");
                 Console.WriteLine("[info] slotIndex: " + clientComponentUpdate.removeFromHotBar[j].slotIndex);
                 Console.WriteLine("[info] isLockboxItem: " + clientComponentUpdate.removeFromHotBar[j].isLockboxItem);
+
+                if (!inventory.GetItem(item => item.hotBarSlotNum == clientComponentUpdate.removeFromHotBar[j].slotIndex, out var targetItem)) continue;
+
+                var newPos = inventory.FindUnassignedPosition(targetItem);
+                if (newPos != null)
+                {
+                    targetItem.xPosition = newPos.Item1;
+                    targetItem.yPosition = newPos.Item2;
+                }
+                else
+                {
+                    targetItem.xPosition = 0;
+                    targetItem.yPosition = 0;
+                    Console.WriteLine("Issue finding unassigned position");
+                }
+                targetItem.hotBarSlotNum = -1;
+                targetItem.rotated = false;
+                
+                if (!inventory.UpdateItem(targetItem))
+                {
+                    Console.WriteLine("UpdateItem failed");
+                }
+                
+                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1081 }, new List<object> { inventory.Update });
             }
             for (int j = 0; j < clientComponentUpdate.assignToHotBar.Count; j++)
             {
@@ -94,6 +146,17 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
                 Console.WriteLine("[info] itemId: " + clientComponentUpdate.assignToHotBar[j].itemId);
                 Console.WriteLine("[info] slotIndex: " + clientComponentUpdate.assignToHotBar[j].slotIndex);
                 Console.WriteLine("[info] isLockboxItem: " + clientComponentUpdate.assignToHotBar[j].isLockboxItem);
+                
+                if (!inventory.GetItem(clientComponentUpdate.assignToHotBar[j].itemId, out var targetItem, true)) continue;
+
+                targetItem.hotBarSlotNum = clientComponentUpdate.assignToHotBar[j].slotIndex;
+                
+                if (!inventory.UpdateItem(targetItem))
+                {
+                    Console.WriteLine("UpdateItem failed");
+                }
+                
+                SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1081 }, new List<object> { inventory.Update });
             }
 
             SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { ComponentId }, new List<object> { serverComponentUpdate });

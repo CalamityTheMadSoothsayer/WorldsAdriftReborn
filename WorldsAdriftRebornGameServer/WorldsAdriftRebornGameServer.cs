@@ -1,15 +1,9 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Improbable.Worker;
+﻿using System.Runtime.InteropServices;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
-using WorldsAdriftRebornGameServer.Game.Components;
 using WorldsAdriftRebornGameServer.Game.Components.Update;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
-using static WorldsAdriftRebornGameServer.DLLCommunication.EnetLayer;
 
 namespace WorldsAdriftRebornGameServer
 {
@@ -38,15 +32,18 @@ namespace WorldsAdriftRebornGameServer
 
         private static readonly EnetLayer.ENet_Poll_Callback callbackC = new EnetLayer.ENet_Poll_Callback(OnNewClientConnected);
         private static readonly EnetLayer.ENet_Poll_Callback callbackD = new EnetLayer.ENet_Poll_Callback(OnClientDisconnected);
-        private static readonly List<uint> authoritativeComponents = new List<uint>{ 8050, 8051, 6908, 1260, 1097, 1003, 1241, 1082};
         private static List<long> playerEntityIDs = new List<long>();
 
-        private static long nextEntityId = 0;
+        // TODO: Replace with some sort of Entity Manager system. Some code in ComponentsSerializer.cs is hardcoded for
+        // TODO: Player=1 and Island=2, so make sure to fix that before removing below
+        public const long TestPlayerId = 1;
+        public const long TestIslandId = 2;
+        private static long nextEntityId = 2;
         public static long NextEntityId
         {
             get
             {
-                return nextEntityId++;
+                return ++nextEntityId;
             }
         }
         
@@ -108,9 +105,10 @@ namespace WorldsAdriftRebornGameServer
                 })),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, new Action<object>((object o) =>
                 {
-                    Console.WriteLine("[success] island asset loaded. requesting loading of island...");
+                    var nextId = TestIslandId;  // NextEntityId
+                    Console.WriteLine($"[success] island asset loaded. requesting loading of island (ID={nextId}...");
 
-                    if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)o, NextEntityId, "949069116@Island", "notNeeded?"))
+                    if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)o, nextId, "949069116@Island", "notNeeded?"))
                     {
                         Console.WriteLine("[info] successfully serialized and queued AddEntityOp.");
                     }
@@ -121,10 +119,11 @@ namespace WorldsAdriftRebornGameServer
                 })),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, new Action<object>((object o) =>
                 {
-                    Console.WriteLine("[info] client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned). requesting to spawn player...");
+                    var nextId = TestPlayerId;  // NextEntityId
+                    Console.WriteLine($"[info] client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned). requesting to spawn player (ID={nextId})...");
 
-                    playerEntityIDs.Add(NextEntityId);
-                    if(SendOPHelper.SendAddEntityOP((ENetPeerHandle)o, playerEntityIDs.Last<long>(), "Traveller", "Player"))
+                    playerEntityIDs.Add(nextId);
+                    if(SendOPHelper.SendAddEntityOP((ENetPeerHandle)o, nextId, "Traveller", "Player"))
                     {
                         Console.WriteLine("[info] successfully serialized and queued AddEntityOp.");
                     }
@@ -187,9 +186,8 @@ namespace WorldsAdriftRebornGameServer
                                     // the second stage needs a few components setup properly, for this we need to inject one component and call auth changed for a few others once.
 
                                     // some components are needed in the first stage and need to be injected.
-                                    // we also need PilotState since schematics for glider where added, as the game nullrefs in PlayerExternalDataVisualizer.IsDriving() now (1109)
-                                    List<Structs.Structs.InterestOverride> injectedEarly = new List<Structs.Structs.InterestOverride> { new Structs.Structs.InterestOverride(1109, 1) };
-
+                                    // Send PlayerExternalDataVisualizer required components
+                                    List<Structs.Structs.InterestOverride> injectedEarly = new uint[] {1207, 1077, 1109}.Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
                                     if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injectedEarly, true))
                                     {
                                         continue;
@@ -200,11 +198,14 @@ namespace WorldsAdriftRebornGameServer
                                     {
                                         continue;
                                     }
-
+                                    
+                                    // TODO: Document these
+                                    // 1242 - LocationState - Might only be relevant for OTHER players! See RelativeLocationVisualizer for more info.
+                                    List<uint> authoritativeComponents = new List<uint>{ 1073, 1040, 1080, 8050, 8051, 6908, 1260, 1097, 1003, 1241, 1082, 1211, 1212, 2105, 2106, 2002, 1242}; //190602};  // 1073};
+                                    List<uint> authoritativeComponentsClearAfter = new List<uint>{ 1212, 1242 };
+        
                                     // for some reason the game does not always request component 1080 (SchematicsLearnerGSimState), but its reader is required in InventoryVisualiser
-                                    List<Structs.Structs.InterestOverride> injected = new List<Structs.Structs.InterestOverride> { new Structs.Structs.InterestOverride(1080, 1) };
-                                    // also inject other required components for the inventory
-                                    injected.AddRange(authoritativeComponents.Select(p => new Structs.Structs.InterestOverride(p, 1)));
+                                    List<Structs.Structs.InterestOverride> injected = authoritativeComponents.Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
 
                                     if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injected, true))
                                     {
@@ -213,6 +214,11 @@ namespace WorldsAdriftRebornGameServer
 
                                     // now send auth change
                                     if(!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId, authoritativeComponents))
+                                    {
+                                        continue;
+                                    }
+                                    // clear auth on select components. some need temporary authority to initialise?
+                                    if(!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId, authoritativeComponentsClearAfter, false))
                                     {
                                         continue;
                                     }
@@ -242,12 +248,13 @@ namespace WorldsAdriftRebornGameServer
 
                             if (EnetLayer.PB_EXP_ComponentUpdateOp_Deserialize(packet->Data, (int)packet->DataLength, &entityId, &update, &updateCount) && updateCount > 0)
                             {
-                                Console.WriteLine("[info] game requests " + updateCount + " ComponentUpdate's for entity id " + entityId);
-
+                                var skipLog = false;
                                 for(int i = 0; i < updateCount; i++)
                                 {
+                                    if (updateCount == 1 && update[i].ComponentId == 1073) skipLog = true;
                                     ComponentUpdateManager.Instance.HandleComponentUpdate(keyValuePair.Key, entityId, update[i].ComponentId, update[i].ComponentData, update[i].DataLength);
                                 }
+                                if (!skipLog) Console.WriteLine("[info] game requested " + updateCount + " ComponentUpdate's for entity id " + entityId);
                             }
                             else
                             {
