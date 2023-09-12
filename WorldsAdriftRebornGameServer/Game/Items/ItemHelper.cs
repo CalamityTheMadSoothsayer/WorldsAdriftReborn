@@ -7,6 +7,11 @@ namespace WorldsAdriftRebornGameServer.Game.Items
 {
     public static class ItemHelper
     {
+        public const int SALVAGE_REPAIR_TOOL = -2;
+        public const int SHIP_PART_SCANNER_TOOL = -3;
+        public const int REPAIR_TOOL = -5;
+        public const int SCANNER_TOOL = -6;
+        
         private static Dictionary<string, ValidItem> _allItems = new Dictionary<string, ValidItem>();
         private static readonly string itemPath = Path.Combine(
                                                             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
@@ -68,6 +73,11 @@ namespace WorldsAdriftRebornGameServer.Game.Items
         }
 
         public static ValidItem GetItem( string itemTypeId ) => AllItems[itemTypeId];
+        public static (int, int) GetDimensions( string itemTypeId )
+        {
+            var i = AllItems[itemTypeId];
+            return (i.width, i.height);
+        }
 
         public static ScalaSlottedInventoryItem MakeItem( int itemId, string itemTypeId, int x = 0, int y = 0,
             int amount = 1, int quality = 0, bool stashItem = false, int hotBarSlot = -1,
@@ -138,14 +148,15 @@ namespace WorldsAdriftRebornGameServer.Game.Items
         {
             return new Improbable.Collections.List<ScalaSlottedInventoryItem>
             {
-                MakeItem(1, "gauntlet_salvage", -1, -1, hotBarSlot: 0),
-                MakeItem(2, "gauntlet_repair", -1, -1, hotBarSlot: 1),
-                MakeItem(3, "gauntlet_build", -1, -1, hotBarSlot: 2),
-                MakeItem(4, "gauntlet_scanner", -1, -1, hotBarSlot: 3),
+                MakeItem(SALVAGE_REPAIR_TOOL, "gauntlet_salvage", -1, -1, hotBarSlot: 0),
+                MakeItem(REPAIR_TOOL, "gauntlet_repair", -1, -1, hotBarSlot: 1),
+                MakeItem(SHIP_PART_SCANNER_TOOL, "gauntlet_build", -1, -1, hotBarSlot: 2),
+                MakeItem(SCANNER_TOOL, "gauntlet_scanner", -1, -1, hotBarSlot: 3),
                 //MakeItem(1100, "gold", 2, 3, 40, 9),
                 MakeItem(1101, "glider"),
                 MakeItem(1102, "torso_poncho", 0, 4),
-                MakeItem(1103, "head_devhat", 3, 0)
+                MakeItem(1103, "head_devhat", 3, 0),
+                MakeItem(1104, "torch", 7, 7)
             };
         }
 

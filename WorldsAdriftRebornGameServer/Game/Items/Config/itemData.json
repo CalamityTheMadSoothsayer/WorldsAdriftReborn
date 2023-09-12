@@ -1355,7 +1355,7 @@
     "category":"",
     "iconName":"crafted items/1x4_Torch",
     "equippable":false,
-    "characterSlot":"None",
+    "characterSlot":"Tool",
     "metadata":{
       "totalHealth":"100",
       "health": "100"
