@@ -109,11 +109,26 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if(componentId == 190602)
                     {
-                        TransformStateData tInit;
-                        if (entityId == 1)
+                        var matchingIsland = WorldsAdriftRebornGameServer.TestIslands.FirstOrDefault(i => i.HasValue && i.Value.entityId == entityId);
+                        if (matchingIsland != null)
                         {
-                            tInit = new TransformStateData(
-                                new FixedPointVector3(new Improbable.Collections.List<long> { 0, 100, 0 }),
+                            TransformStateData tInit = new TransformStateData(new FixedPointVector3(matchingIsland.Value.position),
+                                                                    new Quaternion32(1),
+                                                                    null,
+                                                                    new Improbable.Math.Vector3d(0f, 0f, 0f),
+                                                                    new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                                                    new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                                                    false,
+                                                                    0f);
+                            TransformState.Data tData = new TransformState.Data(tInit);
+
+                            obj = tData;
+                        }
+                        else
+                        {
+                            Console.WriteLine("[Component " + componentId + "] accessed for [Entity] " + entityId);
+                            TransformStateData tInit = new TransformStateData(
+                                new FixedPointVector3(new Improbable.Collections.List<long> { 1000000, 1000000, 0 }),
                                 new Quaternion32(1),
                                 null,
                                 new Improbable.Math.Vector3d(0f, 0f, 0f),
@@ -121,22 +136,10 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                                 new Improbable.Math.Vector3f(0f, 0f, 0f),
                                 false,
                                 0f);
-                        } else
-                        {
-                            tInit = new TransformStateData(
-                                new FixedPointVector3(new Improbable.Collections.List<long> { 0, 0, 0 }),
-                                new Quaternion32(1),
-                                new Option<Parent>(new Parent(new EntityId(2), "~")),  // ~ is required by the WA client to properly recognise an entity's parent. Most code seems to use this as a fallback but can't be certain.
-                                new Improbable.Math.Vector3d(0f, 0f, 0f),
-                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                false,
-                                0f);
+                            TransformState.Data tData = new TransformState.Data(tInit);
+
+                            obj = tData;
                         }
-
-                        TransformState.Data tData = new TransformState.Data(tInit);
-
-                        obj = tData;
                     }
                     else if(componentId == 190601)
                     {
@@ -432,11 +435,12 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         // todo: check how we could get correct values for this.
                         IslandState.Data data = new IslandState.Data(new IslandStateData("949069116@Island",
+                        // IslandState.Data data = new IslandState.Data(new IslandStateData("3034985818@Island",
                                                                                             new Coordinates(0, 0, 0),
                                                                                             1f,
                                                                                             new Vector3f(0,0,0),
                                                                                             new Vector3f(200f, 200f, 200f),
-                                                                                            new Option<string>("I Dont know who made this island :("),
+                                                                                            new Option<string>("Mr Scronge"),
                                                                                             false,
                                                                                             new Improbable.Collections.List<IslandDatabank>()
                                                                                             ));

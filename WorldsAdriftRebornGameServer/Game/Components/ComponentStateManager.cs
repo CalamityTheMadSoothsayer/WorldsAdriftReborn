@@ -4,18 +4,19 @@ using Improbable.Entity.Component;
 using Improbable.Worker;
 using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
+using WorldsAdriftRebornGameServer.Game.Components;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Update
+namespace WorldsAdriftRebornGameServer.Game.Components
 {
-    internal class ComponentUpdateManager
+    internal class ComponentStateManager
     {
-        private static ComponentUpdateManager instance { get; set; }
-        public static ComponentUpdateManager Instance
+        private static ComponentStateManager instance { get; set; }
+        public static ComponentStateManager Instance
         {
             get
             {
-                return instance ?? (instance = new ComponentUpdateManager());
+                return instance ?? (instance = new ComponentStateManager());
             }
         }
         private static class HashCache<T>
@@ -46,7 +47,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update
             HashCache<T>.Id = hash;
             return hash;
         }
-        private ComponentUpdateManager()
+        private ComponentStateManager()
         {
             foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -69,7 +70,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update
         private void RegisterAllComponentUpdateHandlers(Assembly assembly)
         {
             IEnumerable<Type> definedHandlers = assembly.GetTypes()
-                .Where(t => t.GetCustomAttributes(typeof(RegisterComponentUpdateHandler), true).Length > 0);
+                .Where(t => t.GetCustomAttributes(typeof(ComponentStateHandler), true).Length > 0);
 
             MethodInfo registerMethod = this.GetType().GetMethods()
                 .Where(m => m.Name == nameof(RegisterComponentUpdateHandler))
@@ -78,7 +79,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update
 
             foreach(Type type in definedHandlers)
             {
-                if(IsSubclassOfRawGeneric(typeof(IComponentUpdateHandler<,,>), type))
+                if(IsSubclassOfRawGeneric(typeof(IComponentStateHandler<,,>), type))
                 {
                     Type type_baseComponentUpdate = type.BaseType.GetGenericArguments()[0];
                     Type type_clientComponentUpdate = type.BaseType.GetGenericArguments()[1];
@@ -114,7 +115,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update
         public unsafe bool HandleComponentUpdate(ENetPeerHandle player, long entityId, uint componentId, byte* componentData, int componentDataLength)
         {
             bool success = false;
-            Console.WriteLine("[info] trying to handle a ComponentUpdateOp for " + componentId);
+            // Console.WriteLine("[info] trying to handle a ComponentUpdateOp for " + componentId);
 
             for (int i = 0; i < ComponentsManager.Instance.ClientComponentVtables.Length; i++)
             {

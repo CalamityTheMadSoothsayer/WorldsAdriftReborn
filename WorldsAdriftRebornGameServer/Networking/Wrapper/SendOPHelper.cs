@@ -146,7 +146,7 @@ namespace WorldsAdriftRebornGameServer.Networking.Wrapper
 
                 if(len > 0)
                 {
-                    Console.WriteLine("[success] serialized stored component after update. " + componentId[i] + ")");
+                    // Console.WriteLine("[success] serialized stored component after update. " + componentId[i] + ")");
 
                     cupdate.ComponentId = componentId[i];
                     cupdate.ComponentData = cbuffer;
@@ -166,7 +166,7 @@ namespace WorldsAdriftRebornGameServer.Networking.Wrapper
 
                 if(ptr != null && len > 0)
                 {
-                    Console.WriteLine("[success] serialized ComponentUpdateOp message for client.");
+                    // Console.WriteLine("[success] serialized ComponentUpdateOp message for client.");
 
                     EnetLayer.ENet_Send(destination, (int)EnetLayer.ENetChannel.COMPONENT_UPDATE_OP, ptr, len, (int)ENetPacketFlag.RELIABLE);
 

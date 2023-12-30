@@ -1,25 +1,17 @@
-﻿using System.ComponentModel;
-using Bossa.Travellers.Inventory;
+﻿using Bossa.Travellers.Inventory;
 using Bossa.Travellers.Player;
-using Improbable.Worker;
-using Improbable.Worker.Internal;
-using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.DLLCommunication;
+using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
 {
-    [RegisterComponentUpdateHandler]
-    internal class InventoryModificationState_Handler : IComponentUpdateHandler<InventoryModificationState,
+    [ComponentStateHandler]
+    internal class InventoryModificationStateHandler : IComponentStateHandler<InventoryModificationState,
         InventoryModificationState.Update, InventoryModificationState.Data>
     {
-
-        public InventoryModificationState_Handler() { Init(1082); }
-        protected override void Init( uint ComponentId )
-        {
-            this.ComponentId = ComponentId;
-        }
+        public override uint ComponentId => 1082;
         
         public override void HandleUpdate( ENetPeerHandle player, long entityId, InventoryModificationState.Update clientComponentUpdate, InventoryModificationState.Data serverComponentData)
         {

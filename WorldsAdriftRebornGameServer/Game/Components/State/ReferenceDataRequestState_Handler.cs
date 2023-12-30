@@ -7,16 +7,13 @@ using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
 {
-    [RegisterComponentUpdateHandler]
-    internal class ReferenceDataRequestState_Handler : IComponentUpdateHandler<ReferenceDataRequestState, ReferenceDataRequestState.Update, ReferenceDataRequestState.Data>
+    [ComponentStateHandler]
+    internal class ReferenceDataRequestStateHandler : IComponentStateHandler<ReferenceDataRequestState, ReferenceDataRequestState.Update, ReferenceDataRequestState.Data>
     {
-        public ReferenceDataRequestState_Handler() { Init(6908); }
-        protected override void Init( uint ComponentId )
-        {
-            this.ComponentId = ComponentId;
-        }
+        public override uint ComponentId => 6908;
+        
         private static byte[] Compress(string input)
         {
             byte[] data = Encoding.ASCII.GetBytes(input);

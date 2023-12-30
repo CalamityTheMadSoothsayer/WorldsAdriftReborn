@@ -1,25 +1,17 @@
-﻿using Bossa.Travellers.Motion;
-using Bossa.Travellers.Player;
-using Improbable;
-using Improbable.Collections;
-using Improbable.Corelibrary.Math;
+﻿using Bossa.Travellers.Player;
 using Improbable.Corelibrary.Transforms;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
 {
-    [RegisterComponentUpdateHandler]
-    internal class ClientAuthoritativePlayerState_Handler : IComponentUpdateHandler<ClientAuthoritativePlayerState,
+    [ComponentStateHandler]
+    internal class ClientAuthoritativePlayerStateHandler : IComponentStateHandler<ClientAuthoritativePlayerState,
         ClientAuthoritativePlayerState.Update, ClientAuthoritativePlayerState.Data>
     {
 
-        public ClientAuthoritativePlayerState_Handler() { Init(1073); }
-        protected override void Init( uint ComponentId )
-        {
-            this.ComponentId = ComponentId;
-        }
+        public override uint ComponentId => 1073;
         
         public override void HandleUpdate( ENetPeerHandle player, long entityId, ClientAuthoritativePlayerState.Update clientComponentUpdate, ClientAuthoritativePlayerState.Data serverComponentData)
         {
@@ -30,12 +22,12 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
             // var location = Utils.GetStateUpdate<LocationState, LocationState.Update, LocationState.Data>(player, entityId, 1242);
             // location.SetTimestamp(serverComponentData.Value.timestamp);
             //
-            // var transform = Utils.GetStateUpdate<TransformState, TransformState.Update, TransformState.Data>(player, entityId, 190602);
-            // transform.SetTimestamp(serverComponentData.Value.timestamp);
+            var transform = Utils.GetStateUpdate<TransformState, TransformState.Update, TransformState.Data>(player, entityId, 190602);
+            transform.SetTimestamp(serverComponentData.Value.timestamp);
+            
             //
             // if (serverComponentData.Value.relativeTo.IsValid())
             // {
-            //     // TODO: Utilities for converting between compressed data variants Vector3f <-> FixedPointVector3 and Quaternion <-> Quaternion32
             //     location.SetRelative(new RelativeLocation(serverComponentData.Value.relativeTo, serverComponentData.Value.positionRelative, serverComponentData.Value.rotationRelative));
             //     transform.SetLocalPosition(new FixedPointVector3(new Improbable.Collections.List<long> {(long) serverComponentData.Value.positionRelative.X, (long) serverComponentData.Value.positionRelative.Y, (long) serverComponentData.Value.positionRelative.Z}));
             //     transform.SetParent(new Option<Parent>(new Parent(serverComponentData.Value.relativeTo, "~")));
@@ -47,18 +39,18 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Update.Handlers
             //     transform.SetParent(null);
             // }
 
-            Console.WriteLine("Received relative position: " + serverComponentData.Value.positionRelative);
-            // Console.WriteLine("rotr: " + serverComponentData.Value.rotationRelative);
-            // Console.WriteLine("rto: " + serverComponentData.Value.relativeTo);
-            // Console.WriteLine("rbias: " + serverComponentData.Value.relativeBias);
-            // Console.WriteLine("grounded: " + serverComponentData.Value.grounded);
-            // Console.WriteLine("timestamp: " + serverComponentData.Value.timestamp);
-            // Console.WriteLine("knocked out " + serverComponentData.Value.knockedOut);
-            // Console.WriteLine("last req " + serverComponentData.Value.lastExecutedRequest);
-            // Console.WriteLine("id " + entityId);
+            // Console.WriteLine("Received relative position: " + serverComponentData.Value.positionRelative);
+
+            // TODO: THESE TWO ARE THE WORKING-ISH LINES
+            // var response = Positions.RelativePositionUpdate(entityId, serverComponentData.Value.relativeTo.Id, serverComponentData.Value.positionRelative);
+            // Console.WriteLine("Calculated absolute position: " + response.Absolute);
+
+            // transform.SetParent(new Parent(response.HasParent ? response.ParentId : new EntityId(-1), "~"));
+            // transform.SetLocalPosition(response.Relative);
 
             // SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId, 1242, 190602 }, new System.Collections.Generic.List<object> { serverComponentUpdate, location, transform });
-            SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { serverComponentUpdate });
+            SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId, 190602 }, new System.Collections.Generic.List<object> { serverComponentUpdate, transform });
+            // SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { serverComponentUpdate });
         }
     }
 }
