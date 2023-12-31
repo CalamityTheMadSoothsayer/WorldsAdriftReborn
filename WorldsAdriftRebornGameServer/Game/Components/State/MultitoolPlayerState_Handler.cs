@@ -31,7 +31,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
             {
                 Console.WriteLine("INFO - Game requests toggleMode");
             }
-
             
             SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { serverComponentUpdate });
         }

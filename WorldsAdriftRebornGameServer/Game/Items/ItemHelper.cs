@@ -88,7 +88,7 @@ namespace WorldsAdriftRebornGameServer.Game.Items
                 hotBarSlot, 0, quality, stashItem, item.Meta(metaOverrides), item.GetRarity());
         }
         
-                public static string GetReferenceItems()
+        public static string GetReferenceItems()
         {
             System.Collections.Generic.List<object> o = new();
             foreach (ValidItem v in AllItems.Values)

@@ -164,7 +164,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Data
     {
         internal static Inventory GetPlayerInventory(ENetPeerHandle player, long entityId)
         {
-            return new Inventory(Utils.GetStateData<InventoryState, InventoryState.Data>(player, entityId, 1081));
+            return new Inventory(EntityManager.GlobalEntityRealm[entityId].Get<InventoryState>().Value.Get());
         }
     }
 

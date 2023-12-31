@@ -2,6 +2,7 @@
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
+using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
@@ -360,6 +361,8 @@ namespace WorldsAdriftRebornGameServer
                         ? new Improbable.Collections.List<long> {rnd.Next(0, 4) * 1000000, rnd.Next(0, 4) * 1000000, 0}
                         : new Improbable.Collections.List<long> {0, 0, 0};
                     TestIslands.Add((entityId, pos));
+                    var island = new Island { Key = islandName, Position = pos };
+                    island.Awake(entityId);
                 }
                 if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, entityId, islandName + "@Island", "notNeeded?"))
                     continue;
@@ -378,6 +381,10 @@ namespace WorldsAdriftRebornGameServer
 
             // TODO: Add player entity to Entity Manager / Player Manager
             playerEntityIDs.Add(nextId);
+
+            var player = new Player();
+            player.Awake(nextId);
+            
             if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, nextId, "Traveller", "Player")) return;
         
             Console.WriteLine("ERROR - Unable to send Player AddEntity for: " + nextId);

@@ -15,6 +15,8 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
         
         public override void HandleUpdate( ENetPeerHandle player, long entityId, InventoryModificationState.Update clientComponentUpdate, InventoryModificationState.Data serverComponentData)
         {
+            var entity = EntityManager.GlobalEntityRealm[entityId];
+            
             clientComponentUpdate.ApplyTo(serverComponentData);
             var inventory = InventoryManager.GetPlayerInventory(player, entityId);
 
@@ -28,9 +30,9 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
                 Console.WriteLine("[info] lockbox: " + clientComponentUpdate.equipWearable[j].isLockboxItem);
 
                 // send updates to equip the wearables
-                var storedWearableUtilsState = Utils.GetStateUpdate<WearableUtilsState, WearableUtilsState.Update, WearableUtilsState.Data>(player, entityId, 1280);
+                var storedWearableUtilsState = entity.Get<WearableUtilsState>().Value.ToUpdate().Get();
                 // TODO: Support "customisations" from the player properties data object, which also means supporting lockbox
-                var storedPlayerPropertiesState = Utils.GetStateUpdate<PlayerPropertiesState, PlayerPropertiesState.Update, PlayerPropertiesState.Data>(player, entityId, 1088);
+                var storedPlayerPropertiesState = entity.Get<PlayerPropertiesState>().Value.ToUpdate().Get();
 
                 storedWearableUtilsState.SetItemIds(new Improbable.Collections.List<int> { clientComponentUpdate.equipWearable[j].itemId }).SetHealths(new Improbable.Collections.List<float> { 100f }).SetActive(new Improbable.Collections.List<bool> { true });
                 if (!inventory.GetItem(clientComponentUpdate.equipWearable[j].itemId, out var targetItem)) continue;  // TODO: MAYBE DONT SILENT ERROR
@@ -47,7 +49,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
                 Console.WriteLine("[info] game wants to equip a tool");
                 Console.WriteLine("[info] id: " + clientComponentUpdate.equipTool[j].itemId);
                 
-                var storedPlayerPropertiesState = Utils.GetStateUpdate<PlayerPropertiesState, PlayerPropertiesState.Update, PlayerPropertiesState.Data>(player, entityId, 1088);
+                var storedPlayerPropertiesState = entity.Get<PlayerPropertiesState>().Value.ToUpdate().Get();
                 if (!inventory.GetItem(clientComponentUpdate.equipTool[j].itemId, out var targetItem)) continue; 
 
                 // TODO: IMPORTANT INFO ! THE GAME DOES NOT PROVIDE ANY FUNCTIONALITY FOR UNEQUIPPING A TOOL. THIS IS BECAUSE THIS EVENT IS EXCLUSIVELY USED FOR THE SCANNER. THE SCANNER IS AN ITEM YOU HAVE TO CRAFT AND THEN EQUIP IN VANILLA.
