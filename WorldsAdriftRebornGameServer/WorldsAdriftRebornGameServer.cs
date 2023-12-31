@@ -42,8 +42,7 @@ namespace WorldsAdriftRebornGameServer
 
         private static List<long> playerEntityIDs = new List<long>();
 
-        public static List<(long entityId, Improbable.Collections.List<long> position)?> TestIslands =
-            new List<(long entityId, Improbable.Collections.List<long> position)?>();
+        public static List<Island> TestIslands = new List<Island>();
 
         // TODO: Replace with some sort of Entity Manager system. Some code in ComponentsSerializer.cs is hardcoded for
         // TODO: Player=1 and Island=2, so make sure to fix that before removing below
@@ -56,7 +55,7 @@ namespace WorldsAdriftRebornGameServer
 
         public static unsafe void Main( string[] args )
         {
-            TestIslandNames = Directory.GetFiles(@"H:\Projects\WA\depots\322783\4112968\Assets\unity")
+            TestIslandNames = Directory.GetFiles(@"D:\Steam\steamapps\common\WorldsAdrift\Assets\unity")
                                        .Where(fp => !fp.EndsWith(".manifset"))
                                        .Select(fp =>
                                            Path.GetFileNameWithoutExtension(fp).Replace("@island_unityclient", ""))
@@ -348,31 +347,42 @@ namespace WorldsAdriftRebornGameServer
         // TODO: Refactor to SyncStepAddEntities<T> for globally loaded entities, possibly using some other utility
         private static void SyncStepAddIslands( object peer )
         {
-            var entityId = NextEntityId;
             var failed = new List<string>();
             var generateLocations = TestIslands.Count == 0;
+
+            var stepSize = 10000000;
+
             for (var i = 0; i < TestIslandCount; i++)
             {
+                var entityId = NextEntityId;
+                long x = ((entityId / TestIslandCount) % TestIslandCount) * stepSize;
+                long y = ((entityId / (TestIslandCount * TestIslandCount)) % TestIslandCount) * stepSize;
+
                 var islandName = TestIslandNames[i];
                 if (generateLocations)
                 {
-                    Random rnd = new Random();
+                    Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
                     var pos = i != 0
-                        ? new Improbable.Collections.List<long> {rnd.Next(0, 4) * 1000000, rnd.Next(0, 4) * 1000000, 0}
-                        : new Improbable.Collections.List<long> {0, 0, 0};
-                    TestIslands.Add((entityId, pos));
-                    var island = new Island { Key = islandName, Position = pos };
+                        ? new Improbable.Collections.List<long> { x, y, 0 }
+                        : new Improbable.Collections.List<long> { 0, 0, 0 };
+
+                    var island = new Island { Key = islandName, Position = pos};
+                    TestIslands.Add(island);
+
                     island.Awake(entityId);
                 }
                 if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, entityId, islandName + "@Island", "notNeeded?"))
                     continue;
+
                 failed.Add(islandName);
             }
 
-            if (failed.Count == 0) return;
+            if (failed.Count == 0)
+                return;
             Console.WriteLine("ERROR - Unable to send Island AddEntity for: " + string.Join(", ", failed));
         }
-        
+
+
         private static void SyncStepAckIsland( object peer )
         {            
             var nextId = TestPlayerId; // NextEntityId
