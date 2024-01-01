@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Improbable;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
@@ -43,21 +44,16 @@ namespace WorldsAdriftRebornGameServer
 
         private static List<long> playerEntityIDs = new List<long>();
 
-        public static List<(long entityId, Improbable.Collections.List<long> position)?> TestIslands =
-            new List<(long entityId, Improbable.Collections.List<long> position)?>();
+        public static List<Island> TestIslands = new List<Island>();
 
         // TODO: Replace with some sort of Entity Manager system. Some code in ComponentsSerializer.cs is hardcoded for
         // TODO: Player=1 and Island=2, so make sure to fix that before removing below
         private static int TestIslandCount = 4;
         private static List<string> TestIslandNames;
-        public const long TestPlayerId = 1;
-        public const long TestIslandId = 2;
-        private static long nextEntityId = 2;
-        public static long NextEntityId => ++nextEntityId;
 
         public static unsafe void Main( string[] args )
         {
-            TestIslandNames = Directory.GetFiles(@"H:\Projects\WA\depots\322783\4112968\Assets\unity")
+            TestIslandNames = Directory.GetFiles(@"D:\Steam\steamapps\common\WorldsAdrift\Assets\unity")
                                        .Where(fp => !fp.EndsWith(".manifset"))
                                        .Select(fp =>
                                            Path.GetFileNameWithoutExtension(fp).Replace("@island_unityclient", ""))
@@ -93,8 +89,9 @@ namespace WorldsAdriftRebornGameServer
             {
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadPlayer),
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadIslands),
-                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands),
-                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland)
+                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland),
+                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands)
+                
             };
 
             while (keepRunning)
@@ -349,43 +346,55 @@ namespace WorldsAdriftRebornGameServer
         // TODO: Refactor to SyncStepAddEntities<T> for globally loaded entities, possibly using some other utility
         private static void SyncStepAddIslands( object peer )
         {
-            var entityId = NextEntityId;
             var failed = new List<string>();
             var generateLocations = TestIslands.Count == 0;
+
+            var stepSize = 10000000;
+
             for (var i = 0; i < TestIslandCount; i++)
             {
+                long x = ((i / TestIslandCount) % TestIslandCount) * stepSize;
+                long y = ((i / (TestIslandCount * TestIslandCount)) % TestIslandCount) * stepSize;
+
                 var islandName = TestIslandNames[i];
                 if (generateLocations)
                 {
-                    var pos = new Improbable.Collections.List<long> { i * 10000000, i * 10000000, 0 };
-                    TestIslands.Add((entityId, pos));
+                    Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
+                    var pos = i != 0
+                        ? new Improbable.Collections.List<long> { x, y, 0 }
+                        : new Improbable.Collections.List<long> { 0, 0, 0 };
+
                     var island = new Island { Key = islandName, Position = pos };
-                    island.Awake(entityId);
+                    TestIslands.Add(island);
+
+                    island.Awake();
                 }
-                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, entityId, islandName + "@Island", "notNeeded?"))
+
+                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, TestIslands.Last().Id, islandName + "@Island", "notNeeded?"))
                     continue;
+
                 failed.Add(islandName);
             }
 
-            if (failed.Count == 0) return;
+            if (failed.Count == 0)
+                return;
             Console.WriteLine("ERROR - Unable to send Island AddEntity for: " + string.Join(", ", failed));
         }
-        
-        private static void SyncStepAckIsland( object peer )
-        {            
-            var nextId = TestPlayerId; // NextEntityId
-            // client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned).
-            Console.WriteLine("INFO - Requesting to spawn player " + nextId);
 
-            // TODO: Add player entity to Entity Manager / Player Manager
-            playerEntityIDs.Add(nextId);
+
+        private static void SyncStepAckIsland( object peer )
+        {
+            // client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned).
+            Console.WriteLine("INFO - Requesting to spawn player ");
 
             var player = new Player();
-            player.Awake(nextId);
-            
-            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, nextId, "Traveller", "Player")) return;
+            player.Awake();
+
+            playerEntityIDs.Add(player.Id);
+
+            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, player.Id, "Traveller", "Player")) return;
         
-            Console.WriteLine("ERROR - Unable to send Player AddEntity for: " + nextId);
+            Console.WriteLine("ERROR - Unable to send Player AddEntity for: " + player.Id);
         }
 
         #endregion
