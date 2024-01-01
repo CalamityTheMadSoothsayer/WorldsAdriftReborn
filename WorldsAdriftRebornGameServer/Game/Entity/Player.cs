@@ -4,16 +4,20 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
 {
     public class Player : CoreEntity
     {
-        public static readonly HashSet<Player> PlayerList = new HashSet<Player>();
+        public static readonly HashSet<long> PlayerList = new HashSet<long>();
 
-        private ENetPeerHandle Client { get; set; }
+        internal ENetPeerHandle Client { get; private set; }  // TODO: 
+
+        internal Player( ENetPeerHandle peer )
+        {
+            Client = peer;
+        }
 
         public override void Awake()
         {
-            PlayerList.Add(this);
             base.Awake();
+            PlayerList.Add(Id);
             Console.WriteLine($"Player {Id} added to PlayerList");
-            return;
         }
 
         public override Player? ToPlayer() => this;

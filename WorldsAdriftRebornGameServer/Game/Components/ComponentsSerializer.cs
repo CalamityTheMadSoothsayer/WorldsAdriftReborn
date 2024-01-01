@@ -118,9 +118,10 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 190602)
                     {
-                        var matchingIsland = WorldsAdriftRebornGameServer.TestIslands.SingleOrDefault(i => i.Id == entityId);
-                        if (matchingIsland != null)
+                        var transformTarget = EntityManager.GlobalEntityRealm[entityId];
+                        if (transformTarget is Island matchingIsland)
                         {
+                            Console.WriteLine("[Component " + componentId + "] accessed for [Island] " + entityId);
                             TransformStateData tInit = new TransformStateData(new FixedPointVector3(matchingIsland.Position),
                                                                     new Quaternion32(1),
                                                                     null,
@@ -511,10 +512,8 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 1041)
                     {
-                        var matchingIsland = WorldsAdriftRebornGameServer.TestIslands
-                            .FirstOrDefault(i => i.Id == entityId);
-
-                        if (matchingIsland != null)
+                        var transformTarget = EntityManager.GlobalEntityRealm[entityId];
+                        if (transformTarget is Island matchingIsland)
                         {
                             var islandPosition = matchingIsland.Position;
 

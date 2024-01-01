@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
 using Improbable;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
@@ -42,10 +43,6 @@ namespace WorldsAdriftRebornGameServer
         private static readonly EnetLayer.ENet_Poll_Callback callbackD =
             new EnetLayer.ENet_Poll_Callback(OnClientDisconnected);
 
-        private static List<long> playerEntityIDs = new List<long>();
-
-        public static List<Island> TestIslands = new List<Island>();
-
         // TODO: Replace with some sort of Entity Manager system. Some code in ComponentsSerializer.cs is hardcoded for
         // TODO: Player=1 and Island=2, so make sure to fix that before removing below
         private static int TestIslandCount = 4;
@@ -53,7 +50,8 @@ namespace WorldsAdriftRebornGameServer
 
         public static unsafe void Main( string[] args )
         {
-            TestIslandNames = Directory.GetFiles(@"D:\Steam\steamapps\common\WorldsAdrift\Assets\unity")
+            // TODO: Fix this awful logic
+            TestIslandNames = Directory.GetFiles((Environment.UserName == "nekoi" ? @"H:\Projects\WA\depots\322783\4112968"  : @"D:\Steam\steamapps\common\WorldsAdrift") + @"\Assets\unity")
                                        .Where(fp => !fp.EndsWith(".manifset"))
                                        .Select(fp =>
                                            Path.GetFileNameWithoutExtension(fp).Replace("@island_unityclient", ""))
@@ -168,12 +166,8 @@ namespace WorldsAdriftRebornGameServer
                         
                         Console.WriteLine("[info] game requests components for entity id: " + entityId);
 
-                        long entityIdToCheck = entityId; // Assuming entityId is a long
-
-                        bool isEntityInPlayerList =
-                            playerEntityIDs.Any(playerEntity => playerEntity == entityIdToCheck);
-                        bool isPeerNotInClientSetupState =
-                            !PeerManager.Instance.clientSetupState.Contains(keyValuePair.Key);
+                        bool isEntityInPlayerList = Player.PlayerList.Contains(entityId);
+                        bool isPeerNotInClientSetupState = !PeerManager.Instance.clientSetupState.Contains(keyValuePair.Key);
 
                         if (isEntityInPlayerList && isPeerNotInClientSetupState)
                         {
@@ -347,7 +341,7 @@ namespace WorldsAdriftRebornGameServer
         private static void SyncStepAddIslands( object peer )
         {
             var failed = new List<string>();
-            var generateLocations = TestIslands.Count == 0;
+            var generateLocations = Island.IslandList.Count == 0;
 
             var stepSize = 10000000;
 
@@ -365,12 +359,10 @@ namespace WorldsAdriftRebornGameServer
                         : new Improbable.Collections.List<long> { 0, 0, 0 };
 
                     var island = new Island { Key = islandName, Position = pos };
-                    TestIslands.Add(island);
-
                     island.Awake();
                 }
 
-                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, TestIslands.Last().Id, islandName + "@Island", "notNeeded?"))
+                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, Island.IslandList.Last().Id, islandName + "@Island", "notNeeded?"))
                     continue;
 
                 failed.Add(islandName);
@@ -387,10 +379,8 @@ namespace WorldsAdriftRebornGameServer
             // client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned).
             Console.WriteLine("INFO - Requesting to spawn player ");
 
-            var player = new Player();
+            var player = new Player((ENetPeerHandle) peer);
             player.Awake();
-
-            playerEntityIDs.Add(player.Id);
 
             if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, player.Id, "Traveller", "Player")) return;
         
