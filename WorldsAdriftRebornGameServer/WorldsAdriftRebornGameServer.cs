@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Numerics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Improbable;
 using WorldsAdriftRebornGameServer.DLLCommunication;
@@ -86,10 +87,12 @@ namespace WorldsAdriftRebornGameServer
             GameState.Instance.WorldState[0] = new List<SyncStep>()
             {
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadPlayer),
+                new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadRespawner),
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadIslands),
+                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddRespawner),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands)
-                
+
             };
 
             while (keepRunning)
@@ -317,6 +320,14 @@ namespace WorldsAdriftRebornGameServer
             Console.WriteLine("ERROR - Unable to send Player AssetLoadRequest");
         }
 
+        private static void SyncStepLoadRespawner( object peer )
+        {
+            var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?", "AncientRespawner", "100");
+            if (result)
+                return;
+            Console.WriteLine("ERROR - Unable to send Respawner AssetLoadRequest");
+        }
+
         private static void SyncStepLoadIslands( object peer )
         {
             var failed = new List<string>();
@@ -336,6 +347,15 @@ namespace WorldsAdriftRebornGameServer
         #endregion
 
         #region Entity Creation
+
+        private static void SyncStepAddRespawner( object peer )
+        {
+            AncientRespawner ancient = new AncientRespawner();
+            ancient.Awake();
+            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
+                return;
+            Console.WriteLine("ERROR - Unable to send AncientRespawner AddEntity for: " + ancient.Id);
+        }
 
         // TODO: Refactor to SyncStepAddEntities<T> for globally loaded entities, possibly using some other utility
         private static void SyncStepAddIslands( object peer )

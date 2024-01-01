@@ -1,6 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using Bossa.Travellers.Alliance;
 using Bossa.Travellers.Analytics;
+using Bossa.Travellers.Ancientrespawners;
+using Bossa.Travellers.Biomes;
 using Bossa.Travellers.Clock;
 using Bossa.Travellers.Controls;
 using Bossa.Travellers.Craftingstation;
@@ -114,7 +116,10 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
                         obj = bData;
-                        EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                        if (entityId != 6)
+                        {
+                            EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                        }
                     }
                     else if (componentId == 190602)
                     {
@@ -259,6 +264,12 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         AllianceNameState.Data anData = new AllianceNameState.Data(new AllianceNameStateData("WA Alliance"));
 
+                        obj = anData;
+                        EntityManager.GlobalEntityRealm[entityId].Add(anData);
+                    }
+                    else if(componentId == 6905)
+                    {
+                        AncientRespawnerState.Data anData = new AncientRespawnerState.Data(new AncientRespawnerStateData(1,BiomeType.Biome1, new Improbable.Collections.List<EntityId>()));
                         obj = anData;
                         EntityManager.GlobalEntityRealm[entityId].Add(anData);
                     }
