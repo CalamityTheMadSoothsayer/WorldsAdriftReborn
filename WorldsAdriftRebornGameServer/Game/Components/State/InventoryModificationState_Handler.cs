@@ -2,6 +2,7 @@
 using Bossa.Travellers.Player;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Components.Data;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 

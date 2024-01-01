@@ -5,7 +5,7 @@ using Improbable.Corelib.Math;
 using Improbable.Corelibrary.Transforms;
 using Improbable.Math;
 using WorldsAdriftRebornGameServer.DLLCommunication;
-using WorldsAdriftRebornGameServer.Game.Components.Data;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
 namespace WorldsAdriftRebornGameServer.Game.Components.Handlers

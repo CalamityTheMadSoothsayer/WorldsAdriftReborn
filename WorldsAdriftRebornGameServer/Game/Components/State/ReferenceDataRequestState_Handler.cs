@@ -4,6 +4,7 @@ using System.Text.Json;
 using Bossa.Travellers.Refdata;
 using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
@@ -28,6 +29,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
         public override void HandleUpdate( ENetPeerHandle player, long entityId,
             ReferenceDataRequestState.Update clientComponentUpdate, ReferenceDataRequestState.Data serverComponentData )
         {
+            var entity = EntityManager.GlobalEntityRealm[entityId];
             clientComponentUpdate.ApplyTo(serverComponentData);
             ReferenceDataRequestState.Update serverComponentUpdate = (ReferenceDataRequestState.Update)serverComponentData.ToUpdate();
 
@@ -36,7 +38,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
                 bool doComp = clientComponentUpdate.requestReferenceData[j].compress;
                 Console.WriteLine("[info] game requests reference data, compress: " + doComp);
 
-                ReferenceDataState.Update newRefData = (ReferenceDataState.Update)((ReferenceDataState.Data)ClientObjects.Instance.Dereference(GameState.Instance.ComponentMap[player][entityId][1097])).ToUpdate();
+                var newRefData = entity.Get<ReferenceDataState>().Value.ToUpdate().Get();
                 
                 var invData = ItemHelper.GetReferenceItems();
                 var resDesc = ItemHelper.GetDescriptions(true);
@@ -56,6 +58,8 @@ namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
                 newRefData.AddSchematicDataSent(new SendSchematicData(schematicData, doComp ? Compress(schematicData) : null));
 
                 SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { 1097 }, new List<object> { newRefData });
+
+                entity.Update(newRefData);
             }
 
             SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { ComponentId }, new List<object> { serverComponentUpdate });

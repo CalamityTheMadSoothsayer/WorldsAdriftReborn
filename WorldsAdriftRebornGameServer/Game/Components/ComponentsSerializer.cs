@@ -35,6 +35,7 @@ using Improbable.Worker;
 using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Components.Data;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 
@@ -137,7 +138,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         {
                             Console.WriteLine("[Component " + componentId + "] accessed for [Entity] " + entityId);
                             TransformStateData tInit = new TransformStateData(
-                                new FixedPointVector3(new Improbable.Collections.List<long> { 1000000, 1000000, 0 }),
+                                new FixedPointVector3(new Improbable.Collections.List<long> { 1000, 1000, 0 }),
                                 new Quaternion32(1),
                                 null,
                                 new Improbable.Math.Vector3d(0f, 0f, 0f),

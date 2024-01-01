@@ -3,6 +3,7 @@ using Bossa.Travellers.Items;
 using Bossa.Travellers.Salvaging;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Components.Data;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 

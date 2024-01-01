@@ -1,4 +1,4 @@
-﻿namespace WorldsAdriftRebornGameServer.Game.Components.Data
+﻿namespace WorldsAdriftRebornGameServer.Game.Entity
 {
     public class EntityManager
     {

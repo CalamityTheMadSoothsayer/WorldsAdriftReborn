@@ -3,6 +3,7 @@ using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
 using WorldsAdriftRebornGameServer.Game.Components.Data;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
@@ -356,10 +357,7 @@ namespace WorldsAdriftRebornGameServer
                 var islandName = TestIslandNames[i];
                 if (generateLocations)
                 {
-                    Random rnd = new Random();
-                    var pos = i != 0
-                        ? new Improbable.Collections.List<long> {rnd.Next(0, 4) * 1000000, rnd.Next(0, 4) * 1000000, 0}
-                        : new Improbable.Collections.List<long> {0, 0, 0};
+                    var pos = new Improbable.Collections.List<long> { i * 10000000, i * 10000000, 0 };
                     TestIslands.Add((entityId, pos));
                     var island = new Island { Key = islandName, Position = pos };
                     island.Awake(entityId);

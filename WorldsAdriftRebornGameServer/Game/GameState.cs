@@ -39,8 +39,6 @@ namespace WorldsAdriftRebornGameServer.Game
         public Dictionary<int, List<SyncStep>> WorldState { get; set; }
         // we need to store mappings for components for each player to handle updates of them
         // this crappy dictionary nesting needs to be replaced, we need to make use of the games own structures here, this is only temporary
-        public Dictionary<ENetPeerHandle, Dictionary<long, Dictionary<uint, ulong>>> ComponentMap = new Dictionary<ENetPeerHandle, Dictionary<long, Dictionary<uint, ulong>>>();
-
         private GameState()
         {
             WorldState = new Dictionary<int, List<SyncStep>>

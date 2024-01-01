@@ -47,5 +47,19 @@ namespace WorldsAdriftRebornGameServer.Networking.Singleton
             Console.WriteLine("[error] this is not what you wanted, following code will most likely fail.");
             return Marshal.GetDelegateForFunctionPointer<ComponentProtocol.ClientSerialize>(ClientComponentVtables[0].Serialize);
         }
+        public ComponentProtocol.ClientDeserialize GetDeserializerForComponent(uint componentId )
+        {
+            for(int i = 0; i < ClientComponentVtables.Length; i++)
+            {
+                if (ClientComponentVtables[i].ComponentId == componentId)
+                {
+                    return Marshal.GetDelegateForFunctionPointer<ComponentProtocol.ClientDeserialize>(ClientComponentVtables[i].Deserialize);
+                }
+            }
+
+            Console.WriteLine("[error] failed to find the correct serializer for component id " + componentId + ", returning the first in the list.");
+            Console.WriteLine("[error] this is not what you wanted, following code will most likely fail.");
+            return Marshal.GetDelegateForFunctionPointer<ComponentProtocol.ClientDeserialize>(ClientComponentVtables[0].Deserialize);
+        }
     }
 }

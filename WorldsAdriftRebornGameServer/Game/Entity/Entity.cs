@@ -1,8 +1,8 @@
 ﻿using Improbable.Worker;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Data
+namespace WorldsAdriftRebornGameServer.Game.Entity
 {
-    public class CoreEntity : Entity
+    public class CoreEntity : Improbable.Worker.Entity
     {
         public long Id { get; private set; }
         public readonly Dictionary<uint, IComponentData<IComponentMetaclass>> Components = new Dictionary<uint, IComponentData<IComponentMetaclass>>();

@@ -1,5 +1,6 @@
 ﻿using Bossa.Travellers.Inventory;
 using WorldsAdriftRebornGameServer.DLLCommunication;
+using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using Imp = Improbable.Collections;
 

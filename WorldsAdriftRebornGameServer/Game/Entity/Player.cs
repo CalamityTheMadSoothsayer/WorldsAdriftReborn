@@ -1,6 +1,6 @@
 ﻿using WorldsAdriftRebornGameServer.DLLCommunication;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Data
+namespace WorldsAdriftRebornGameServer.Game.Entity
 {
     public class Player : CoreEntity
     {
