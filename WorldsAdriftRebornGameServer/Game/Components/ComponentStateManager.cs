@@ -153,7 +153,17 @@ namespace WorldsAdriftRebornGameServer.Game.Components
             if (deserialize(componentId, 1, componentData, (uint)componentDataLength, &wrapper))
             {
                 // now we got a reference to the deserialized component, we can use it to update the component that we already have for the player.
-                object storedComponent = entity.Components.First(kvp => kvp.Key == componentId);
+                object storedComponent;
+                try
+                {
+                    storedComponent = entity.Components.First(kvp => kvp.Key == componentId);
+                }
+                catch (InvalidOperationException)
+                {
+                    Console.WriteLine($"ERROR - Cant find {componentId} in {string.Join(", ", entity.Components.Select(p => p.Key.ToString()))}");
+                    return false;
+                }
+
                 object newComponent = ClientObjects.Instance.Dereference(wrapper->Reference);
 
                 ulong hash = 0;
