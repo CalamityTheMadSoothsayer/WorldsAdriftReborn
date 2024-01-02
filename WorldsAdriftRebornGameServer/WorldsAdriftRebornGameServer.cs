@@ -46,7 +46,7 @@ namespace WorldsAdriftRebornGameServer
 
         // TODO: Replace with some sort of Entity Manager system. Some code in ComponentsSerializer.cs is hardcoded for
         // TODO: Player=1 and Island=2, so make sure to fix that before removing below
-        private static int TestIslandCount = 4;
+        private static int TestIslandCount = 2;
         private static List<string> TestIslandNames;
 
         public static unsafe void Main( string[] args )
@@ -90,8 +90,8 @@ namespace WorldsAdriftRebornGameServer
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadRespawner),
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadIslands),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddRespawner),
-                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland),
-                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands)
+                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands),
+                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland)
 
             };
 
@@ -322,10 +322,16 @@ namespace WorldsAdriftRebornGameServer
 
         private static void SyncStepLoadRespawner( object peer )
         {
-            var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?", "AncientRespawner", "100");
-            if (result)
-                return;
-            Console.WriteLine("ERROR - Unable to send Respawner AssetLoadRequest");
+            for (var i = 0; i < (TestIslandCount * 2); i++)
+            {
+                var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?", "AncientRespawner", "100");
+                if (result)
+                {
+                    Console.WriteLine("[AR LOADED]");
+                    continue;
+                }
+                Console.WriteLine("ERROR - Unable to send Respawner AssetLoadRequest");
+            }
         }
 
         private static void SyncStepLoadIslands( object peer )
@@ -350,37 +356,47 @@ namespace WorldsAdriftRebornGameServer
 
         private static void SyncStepAddRespawner( object peer )
         {
-            AncientRespawner ancient = new AncientRespawner();
-            ancient.Awake();
-            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
-                return;
-            Console.WriteLine("ERROR - Unable to send AncientRespawner AddEntity for: " + ancient.Id);
+            for (var i = 0; i < (TestIslandCount * 2); i++)
+            {
+                long x = ((i / TestIslandCount) % TestIslandCount) * 100;
+                long y = ((i / (TestIslandCount * TestIslandCount)) % TestIslandCount) * 100;
+
+                var pos = new Improbable.Collections.List<long> { 0, y, 0 };
+
+                AncientRespawner ancient = new AncientRespawner() { Key = "Revival Chamber", Position = pos };
+                ancient.Awake();
+                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
+                {
+                    Console.WriteLine("[AR ADDED]");
+                    continue;
+                }
+                Console.WriteLine("ERROR - Unable to send AncientRespawner AddEntity for: " + ancient.Id);
+            }
         }
 
         // TODO: Refactor to SyncStepAddEntities<T> for globally loaded entities, possibly using some other utility
         private static void SyncStepAddIslands( object peer )
         {
             var failed = new List<string>();
-            var generateLocations = Island.IslandList.Count == 0;
 
-            var stepSize = 10000000;
+            var stepSize = 999;
 
             for (var i = 0; i < TestIslandCount; i++)
             {
-                long x = ((i / TestIslandCount) % TestIslandCount) * stepSize;
-                long y = ((i / (TestIslandCount * TestIslandCount)) % TestIslandCount) * stepSize;
+                long x = i  * stepSize;
+                long y = i  * stepSize;
+
 
                 var islandName = TestIslandNames[i];
-                if (generateLocations)
-                {
-                    Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
-                    var pos = i != 0
-                        ? new Improbable.Collections.List<long> { x, y, 0 }
-                        : new Improbable.Collections.List<long> { 0, 0, 0 };
 
-                    var island = new Island { Key = islandName, Position = pos };
-                    island.Awake();
-                }
+                Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
+                var pos = new Improbable.Collections.List<long> { x, y, 0 };
+
+                Island island = new Island { Key = islandName, Position = pos };
+                island.Awake();
+
+                Console.WriteLine($"[Position] {pos[0]} , {pos[1]} , {pos[2]} added to island {Island.IslandList.Last().Id}");
+
 
                 if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, Island.IslandList.Last().Id, islandName + "@Island", "notNeeded?"))
                     continue;
@@ -398,8 +414,12 @@ namespace WorldsAdriftRebornGameServer
         {
             // client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned).
             Console.WriteLine("INFO - Requesting to spawn player ");
+            long x = 1 * 100;
+            long y = ((1 / (TestIslandCount * TestIslandCount)) % TestIslandCount) * 100;
 
-            var player = new Player((ENetPeerHandle) peer);
+            var pos = new Improbable.Collections.List<long> { 0, y, 0 };
+
+            Player player = new Player((ENetPeerHandle) peer) { Key = "player", Position = pos  };
             player.Awake();
 
             if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, player.Id, "Traveller", "Player")) return;
