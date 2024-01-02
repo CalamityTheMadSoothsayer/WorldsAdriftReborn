@@ -219,7 +219,8 @@ namespace WorldsAdriftRebornGameServer
                                 2105,
                                 2106,
                                 2002,
-                                1093
+                                1093, 
+                                1072
                             }; //190602};  // 1073};
                             List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212, 1073 };
 
