@@ -30,11 +30,10 @@ using Improbable.Corelibrary.Activation;
 using Improbable.Corelibrary.Math;
 using Improbable.Corelibrary.Transforms;
 using Improbable.Corelibrary.Transforms.Global;
+using Improbable.Corelibrary.Transforms.Teleport;
 using Improbable.Math;
-using Improbable.Worker;
 using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
-using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
@@ -92,6 +91,12 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                         obj = shData;
                         EntityManager.GlobalEntityRealm[entityId].Add(shData);
+                    }
+                    else if (componentId == 1072)
+                    {
+                        CharacterControlsData.Data capData = new CharacterControlsData.Data(new CharacterControlsDataData());
+                        obj = capData;
+                        EntityManager.GlobalEntityRealm[entityId].Add(capData);
                     }
                     else if (componentId == 1073)
                     {
@@ -491,7 +496,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 1139)
                     {
-                        WeatherCellState.Data wcData = new WeatherCellState.Data(new WeatherCellStateData(1f, new Vector3f(0f, 0f, 0f)));
+                        WeatherCellState.Data wcData = new WeatherCellState.Data(new WeatherCellStateData(0f, new Vector3f(0f, 0f, 0f)));
 
 
                         EntityManager.GlobalEntityRealm[entityId].Add(wcData);
@@ -535,13 +540,31 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             obj = data;
                         }
                     }
+                    else if (componentId == 1092)
+                    {
+                        RespawnState.Data data = new RespawnState.Data(false, new EntityId(-1), "oof", 2, 2, 5, 5, 0,
+                            new Option<ReviverData>(),
+                            new Option<PendingReviverRequestData>(
+                                new PendingReviverRequestData(1000, 0, new Option<EntityId>(new EntityId(-1)))), 100,
+                            false);
+
+                        EntityManager.GlobalEntityRealm[entityId].Add(data);
+                        obj = data;
+                    }
+                    else if (componentId == 1093)
+                    {
+                        RespawnClientState.Data data = new RespawnClientState.Data();
+
+                        EntityManager.GlobalEntityRealm[entityId].Add(data);
+                        obj = data;
+                    }
                     else if (componentId == 1042)
                     {
                         // todo: check how we could get correct values for this.
                         IslandFabricState.Data data = new IslandFabricState.Data(new IslandFabricStateData(5,
+                                                                                                           1,
                                                                                                            0,
-                                                                                                           0,
-                                                                                                           new Improbable.Collections.List<EntityId> { new EntityId(0) },
+                                                                                                           new Improbable.Collections.List<EntityId> { new EntityId(69) },
                                                                                                            new Option<EntityId>(new EntityId(0)),
                                                                                                            new Option<string>(""),
                                                                                                            Bossa.Travellers.Biomes.BiomeType.Biome1,
@@ -559,6 +582,13 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                                                                                                                         new Improbable.Corelib.Math.Quaternion(0, 0, 0, 0),
                                                                                                                         new Vector3d(0, 0, 0),
                                                                                                                         0));
+
+                        EntityManager.GlobalEntityRealm[entityId].Add(data);
+                        obj = data;
+                    }
+                    else if (componentId == 190607)
+                    {
+                        TeleportRequestState.Data data = new TeleportRequestState.Data(new TeleportRequestStateData());
 
                         EntityManager.GlobalEntityRealm[entityId].Add(data);
                         obj = data;

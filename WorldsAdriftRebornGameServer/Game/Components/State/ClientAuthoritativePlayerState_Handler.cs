@@ -8,7 +8,7 @@ using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.State
 {
     [ComponentStateHandler]
     internal class ClientAuthoritativePlayerStateHandler : IComponentStateHandler<ClientAuthoritativePlayerState,

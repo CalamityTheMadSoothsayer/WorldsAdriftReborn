@@ -1,10 +1,7 @@
-﻿using Improbable.Worker;
-
-namespace WorldsAdriftRebornGameServer.Game.Entity
+﻿namespace WorldsAdriftRebornGameServer.Game.Entity
 {
     public class CoreEntity : Improbable.Worker.Entity
     {
-
         private static long nextEntityId = 1;
 
         public static long GenerateNextId()
@@ -13,7 +10,6 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
         }
 
         public long Id { get; private set; }
-        public readonly Dictionary<uint, IComponentData<IComponentMetaclass>> Components = new Dictionary<uint, IComponentData<IComponentMetaclass>>();
 
         public virtual void Awake()
         {
@@ -23,6 +19,5 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
         }
 
         public virtual Player? ToPlayer() => null;
-
     }
 }

@@ -1,10 +1,7 @@
 ﻿using System.Reflection;
-using System.Runtime.InteropServices;
 using Improbable.Entity.Component;
-using Improbable.Worker;
 using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
-using WorldsAdriftRebornGameServer.Game.Components;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 
@@ -91,32 +88,34 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
             foreach (Type type in definedHandlers)
             {
-                if (IsSubclassOfRawGeneric(typeof(IComponentStateHandler<,,>), type))
+                if (!IsSubclassOfRawGeneric(typeof(IComponentStateHandler<,,>), type))
                 {
-                    Type type_baseComponentUpdate = type.BaseType.GetGenericArguments()[0];
-                    Type type_clientComponentUpdate = type.BaseType.GetGenericArguments()[1];
-                    Type type_serverComponentData = type.BaseType.GetGenericArguments()[2];
-
-                    // dynamically create instance of handler
-                    Type handlerMethodArgTypes = typeof(Action<,,,>).MakeGenericType(typeof(ENetPeerHandle),
-                        typeof(long), type_clientComponentUpdate, type_serverComponentData);
-                    object handler = Activator.CreateInstance(type);
-                    Delegate handlerMethod = Delegate.CreateDelegate(handlerMethodArgTypes, handler,
-                        type.GetMethod("HandleUpdate",
-                            new Type[]
-                            {
-                                typeof(ENetPeerHandle), typeof(long), type_clientComponentUpdate,
-                                type_serverComponentData
-                            }));
-
-                    // register created handler
-                    MethodInfo genericRegisterComponent = registerMethod.MakeGenericMethod(type_baseComponentUpdate,
-                        type_clientComponentUpdate, type_serverComponentData);
-                    genericRegisterComponent.Invoke(this, new object[] { handlerMethod });
-
-                    Console.WriteLine("[success] registered ComponentUpdate handler for type " +
-                                      type_baseComponentUpdate);
+                    continue;
                 }
+
+                Type type_baseComponentUpdate = type.BaseType.GetGenericArguments()[0];
+                Type type_clientComponentUpdate = type.BaseType.GetGenericArguments()[1];
+                Type type_serverComponentData = type.BaseType.GetGenericArguments()[2];
+
+                // dynamically create instance of handler
+                Type handlerMethodArgTypes = typeof(Action<,,,>).MakeGenericType(typeof(ENetPeerHandle),
+                    typeof(long), type_clientComponentUpdate, type_serverComponentData);
+                object handler = Activator.CreateInstance(type);
+                Delegate handlerMethod = Delegate.CreateDelegate(handlerMethodArgTypes, handler,
+                    type.GetMethod("HandleUpdate",
+                        new Type[]
+                        {
+                            typeof(ENetPeerHandle), typeof(long), type_clientComponentUpdate,
+                            type_serverComponentData
+                        }));
+
+                // register created handler
+                MethodInfo genericRegisterComponent = registerMethod.MakeGenericMethod(type_baseComponentUpdate,
+                    type_clientComponentUpdate, type_serverComponentData);
+                genericRegisterComponent.Invoke(this, new object[] { handlerMethod });
+
+                Console.WriteLine("[success] registered ComponentUpdate handler for type " +
+                                  type_baseComponentUpdate);
             }
         }
 
@@ -142,6 +141,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
             bool success = false;
             // Console.WriteLine("[info] trying to handle a ComponentUpdateOp for " + componentId);
             var entity = EntityManager.GlobalEntityRealm[entityId];
+
             if (!entity.GetComponents().Contains(componentId))
             {
                 Console.WriteLine("WARNING - Could not match ComponentUpdate " + componentId + " of entity " + entityId);
@@ -153,14 +153,22 @@ namespace WorldsAdriftRebornGameServer.Game.Components
             if (deserialize(componentId, 1, componentData, (uint)componentDataLength, &wrapper))
             {
                 // now we got a reference to the deserialized component, we can use it to update the component that we already have for the player.
+                
                 object storedComponent;
                 try
                 {
-                    storedComponent = entity.Components.First(kvp => kvp.Key == componentId);
+                    // TODO: Don't use Reflection here!
+                    var componentsField = entity.GetType().GetField("components", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(entity);
+                    if (componentsField is not Dictionary<uint, object> components)
+                    {
+                        Console.WriteLine($"ERROR - Cant fetch component from entity!");
+                        return false;
+                    }
+                    storedComponent = components[componentId];
                 }
-                catch (InvalidOperationException)
+                catch (Exception)
                 {
-                    Console.WriteLine($"ERROR - Cant find {componentId} in {string.Join(", ", entity.Components.Select(p => p.Key.ToString()))}");
+                    Console.WriteLine($"ERROR - Cant fetch component from entity!");
                     return false;
                 }
 
@@ -169,44 +177,31 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                 ulong hash = 0;
                 MethodInfo? genericGetHash = this.GetType().GetMethods().FirstOrDefault(m => m.Name == nameof(GetHash) && m.IsGenericMethod);
 
-                foreach (IComponentMetaclass componentMetaclass in ComponentDatabase.MetaclassMap.Values)
-                {
-                    IComponentFactory componentFactory = componentMetaclass as IComponentFactory;
-                    if (componentFactory != null && genericGetHash != null &&
-                        componentFactory.ComponentId == componentId)
-                    {
-                        MethodInfo getHash = genericGetHash.MakeGenericMethod(componentFactory.GetType());
-                        hash = (ulong)getHash.Invoke(this, new object[] { });
-                        break;
-                    }
-                }
+                var factory = (IComponentFactory) ComponentDatabase.MetaclassMap[componentId];
+                MethodInfo? getHash = genericGetHash?.MakeGenericMethod(factory.GetType());
                 
-                if (_handlers.TryGetValue(hash, out RegisterDelegate handler))
+                if (getHash != null && getHash.Invoke(this, new object[] {}) is ulong fetchedHash && _handlers.TryGetValue(fetchedHash, out var handler))
                 {
                     handler(player, entityId, newComponent, storedComponent);
                     success = true;
                 }
-
-                if (!success)
+                else
                 {
-                    Console.WriteLine("[warning] could not find a handler for component update on " +
-                                      componentId);
+                    Console.WriteLine("WARNING - could not find a handler for component update on " + componentId);
                 }
 
                 ClientObjects.Instance.DestroyReference(wrapper->Reference);
             }
             else
             {
-                Console.WriteLine("[error] failed to deserialize ComponentUpdateOp data for id " +
-                                  componentId);
+                Console.WriteLine("ERROR - Deserialization of ComponentUpdateOp failed, componentId: " + componentId);
             }
 
             ClientObjects.ObjectFree(componentId, 1, wrapper);
 
             if (!success)
             {
-                Console.WriteLine("[error] if no other error above, no matching component for id " + componentId +
-                                  " defined in the game.");
+                Console.WriteLine("ERROR - ComponentUpdate failed or no matching data for componentId " + componentId);
             }
 
             return success;

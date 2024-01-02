@@ -2,13 +2,12 @@
 using System.Text;
 using System.Text.Json;
 using Bossa.Travellers.Refdata;
-using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.State
 {
     [ComponentStateHandler]
     internal class ReferenceDataRequestStateHandler : IComponentStateHandler<ReferenceDataRequestState, ReferenceDataRequestState.Update, ReferenceDataRequestState.Data>

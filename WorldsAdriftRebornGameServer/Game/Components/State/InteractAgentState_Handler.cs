@@ -1,19 +1,13 @@
-﻿using System.Runtime.InteropServices;
-using Bossa.Travellers.Interact;
-using Bossa.Travellers.Inventory;
+﻿using Bossa.Travellers.Interact;
 using Bossa.Travellers.Items;
 using Improbable;
-using Improbable.Collections;
 using Improbable.Math;
-using Improbable.Worker.Internal;
 using WorldsAdriftRebornGameServer.DLLCommunication;
-using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Game.Items;
-using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.State
 {
     [ComponentStateHandler]
     internal class InteractAgentStateHandler : IComponentStateHandler<InteractAgentState, InteractAgentState.Update, InteractAgentState.Data>

@@ -2,7 +2,7 @@
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
 
-namespace WorldsAdriftRebornGameServer.Game.Components.Handlers
+namespace WorldsAdriftRebornGameServer.Game.Components.State
 {
     [ComponentStateHandler]
     internal class PlayerCraftingInteractionStateHandler : IComponentStateHandler<PlayerCraftingInteractionState, PlayerCraftingInteractionState.Update, PlayerCraftingInteractionState.Data>
