@@ -6,7 +6,7 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
     {
         public static readonly HashSet<long> PlayerList = new HashSet<long>();
 
-        internal ENetPeerHandle Client { get; private set; }  // TODO: 
+        internal ENetPeerHandle Client { get; private set; }
 
         internal Player( ENetPeerHandle peer )
         {
@@ -19,7 +19,5 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
             PlayerList.Add(Id);
             Console.WriteLine($"Player {Id} added to PlayerList");
         }
-
-        public override Player? ToPlayer() => this;
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using Bossa.Travellers.Alliance;
 using Bossa.Travellers.Analytics;
+using Bossa.Travellers.Ancientrespawners;
+using Bossa.Travellers.Biomes;
 using Bossa.Travellers.Clock;
 using Bossa.Travellers.Controls;
 using Bossa.Travellers.Craftingstation;
@@ -119,15 +121,27 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
                         obj = bData;
-                        EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                        if (entityId != 6)
+                        {
+                            EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                        }
                     }
                     else if (componentId == 190602)
                     {
-                        var transformTarget = EntityManager.GlobalEntityRealm[entityId];
-                        if (transformTarget is Island matchingIsland)
+
+                        Improbable.Collections.List<long>? position = new Improbable.Collections.List<long>();
+
+                        if (EntityManager.GlobalEntityRealm.TryGetValue(entityId, out var coreEntity))
                         {
-                            Console.WriteLine("[Component " + componentId + "] accessed for [Island] " + entityId);
-                            TransformStateData tInit = new TransformStateData(new FixedPointVector3(matchingIsland.Position),
+                            if (coreEntity is CoreEntity)
+                            {
+                                position = coreEntity.Position;
+                                // Use 'position' as needed
+                            }
+                        }
+
+                        Console.WriteLine("[Component " + componentId + "] accessed for " + coreEntity.Key + " " + entityId + "[POSITION] = " + position[0] + " " + position[1] + " " + position[2]);
+                            TransformStateData tInit = new TransformStateData(new FixedPointVector3(position),
                                                                     new Quaternion32(1),
                                                                     null,
                                                                     new Improbable.Math.Vector3d(0f, 0f, 0f),
@@ -139,24 +153,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                             obj = tData;
                             EntityManager.GlobalEntityRealm[entityId].Add(tData);
-                        }
-                        else
-                        {
-                            Console.WriteLine("[Component " + componentId + "] accessed for [Entity] " + entityId);
-                            TransformStateData tInit = new TransformStateData(
-                                new FixedPointVector3(new Improbable.Collections.List<long> { 1000, 1000, 0 }),
-                                new Quaternion32(1),
-                                null,
-                                new Improbable.Math.Vector3d(0f, 0f, 0f),
-                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                false,
-                                0f);
-                            TransformState.Data tData = new TransformState.Data(tInit);
 
-                            obj = tData;
-                            EntityManager.GlobalEntityRealm[entityId].Add(tData);
-                        }
                     }
                     else if (componentId == 190601)
                     {
@@ -264,6 +261,12 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         AllianceNameState.Data anData = new AllianceNameState.Data(new AllianceNameStateData("WA Alliance"));
 
+                        obj = anData;
+                        EntityManager.GlobalEntityRealm[entityId].Add(anData);
+                    }
+                    else if(componentId == 6905)
+                    {
+                        AncientRespawnerState.Data anData = new AncientRespawnerState.Data(new AncientRespawnerStateData(1,BiomeType.Biome1, new Improbable.Collections.List<EntityId>()));
                         obj = anData;
                         EntityManager.GlobalEntityRealm[entityId].Add(anData);
                     }
@@ -524,7 +527,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                             IslandState.Data data = new IslandState.Data(new IslandStateData(
                                 matchingIsland.Key,
-                                new Coordinates(islandPosition[0], islandPosition[1], islandPosition[2]),
+                                new Coordinates(islandPosition[0], islandPosition[1]+300, islandPosition[2]), // should be respawner location
                                 1f,
                                 new Vector3f(0, 0, 0),
                                 new Vector3f(200f, 200f, 200f),
@@ -560,22 +563,33 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 1042)
                     {
-                        // todo: check how we could get correct values for this.
-                        IslandFabricState.Data data = new IslandFabricState.Data(new IslandFabricStateData(5,
-                                                                                                           1,
-                                                                                                           0,
-                                                                                                           new Improbable.Collections.List<EntityId> { new EntityId(69) },
-                                                                                                           new Option<EntityId>(new EntityId(0)),
-                                                                                                           new Option<string>(""),
-                                                                                                           Bossa.Travellers.Biomes.BiomeType.Biome1,
-                                                                                                           false,
-                                                                                                           new Option<Coordinates>(new Coordinates(0, 0, 0)),
-                                                                                                           new Option<double>(0),
-                                                                                                           new Option<double>(0)));
+                        // creates a system.collections list
+                        var associatedRespawners = Island.IslandSpawners
+                            .Where(association => association.IslandId == entityId)
+                            .SelectMany(association => new[] { association.FirstRespawner, association.SecondRespawner })
+                            .ToList();
+
+                        // need Improbable.Collections.List here (simpler way?)
+                        var improbableEntityIdList = new Improbable.Collections.List<Improbable.EntityId>(associatedRespawners);
+
+                        // todo: Modify the values as needed based on your data structure
+                        IslandFabricState.Data data = new IslandFabricState.Data(new IslandFabricStateData(
+                            1,
+                            0,
+                            0,
+                            improbableEntityIdList,
+                            new Option<EntityId>(associatedRespawners.FirstOrDefault()),
+                            new Option<string>(""),
+                            Bossa.Travellers.Biomes.BiomeType.Biome1,
+                            false,
+                            new Option<Coordinates>(new Coordinates(0, 0, 0)),
+                            new Option<double>(0),
+                            new Option<double>(0)));
 
                         EntityManager.GlobalEntityRealm[entityId].Add(data);
                         obj = data;
                     }
+
                     else if (componentId == 190604)
                     {
                         GlobalTransformState.Data data = new GlobalTransformState.Data(new GlobalTransformStateData(new Coordinates(0, 0, 0),
