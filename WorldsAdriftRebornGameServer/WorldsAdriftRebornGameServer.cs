@@ -1,10 +1,7 @@
-﻿using System.Reflection;
-using System.Runtime.InteropServices;
-using Improbable;
+﻿using System.Runtime.InteropServices;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
-using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
@@ -199,7 +196,11 @@ namespace WorldsAdriftRebornGameServer
                             // 1242 - LocationState - Might only be relevant for OTHER players! See RelativeLocationVisualizer for more info.
                             List<uint> authoritativeComponents = new List<uint>
                             {
-                                1073,
+                                // Clear After
+                                1212,  // 👻👻👻
+                                1073,  // Spammy
+                                
+                                // Keep authority
                                 1040,
                                 1080,
                                 8050,
@@ -211,12 +212,12 @@ namespace WorldsAdriftRebornGameServer
                                 1241,
                                 1082,
                                 1211,
-                                1212,
                                 2105,
                                 2106,
-                                2002
+                                2002,
+                                1093
                             }; //190602};  // 1073};
-                            List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212 };
+                            List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212, 1073 };
 
                             // for some reason the game does not always request component 1080 (SchematicsLearnerGSimState), but its reader is required in InventoryVisualiser
                             List<Structs.Structs.InterestOverride> injected = authoritativeComponents
