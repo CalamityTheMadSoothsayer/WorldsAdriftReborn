@@ -1,6 +1,4 @@
 ﻿using Improbable;
-using Bossa.Travellers.Biomes;
-using Improbable.Collections;
 
 namespace WorldsAdriftRebornGameServer.Game.Entity
 {
@@ -12,8 +10,8 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
 
         public override void Awake()
         {
-            ARlist.Add(new EntityId(Id));
             base.Awake();
+            ARlist.Add(new EntityId(Id));
         }
     }
 }

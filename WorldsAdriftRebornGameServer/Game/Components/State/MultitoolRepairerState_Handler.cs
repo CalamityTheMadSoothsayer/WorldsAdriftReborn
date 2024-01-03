@@ -14,13 +14,23 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
     {
         public override uint ComponentId => 2002;
         
+        public void OnEngagedUpdate(bool wasEngaged, bool isEngaged)
+        {
+            Console.WriteLine("IsEngaged: " + wasEngaged + " -> " + isEngaged);
+        }
+        
         public override void HandleUpdate( ENetPeerHandle player, long entityId, MultitoolRepairerState.Update clientComponentUpdate, MultitoolRepairerState.Data serverComponentData)
         {
+            if (clientComponentUpdate.isEngaged.HasValue &&
+                !clientComponentUpdate.isEngaged.Value.Equals(serverComponentData.Value.isEngaged))
+            {
+                OnEngagedUpdate(serverComponentData.Value.isEngaged, clientComponentUpdate.isEngaged.Value);
+                clientComponentUpdate.SetIsOn(clientComponentUpdate.isEngaged.Value);
+            }
             clientComponentUpdate.ApplyTo(serverComponentData);
             MultitoolRepairerState.Update serverComponentUpdate = (MultitoolRepairerState.Update)serverComponentData.ToUpdate();
-            
-            // Console.WriteLine("IsOn: " + serverComponentUpdate.isOn.Value);
-            // Console.WriteLine("IsEngaged: " + serverComponentUpdate.isEngaged.Value);
+
+            // serverComponentUpdate.SetIsOn(serverComponentData.Value.isEngaged);
             
             SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { serverComponentUpdate });
         }

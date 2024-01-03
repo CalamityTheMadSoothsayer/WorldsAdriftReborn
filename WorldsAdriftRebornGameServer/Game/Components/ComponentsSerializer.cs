@@ -128,31 +128,28 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 190602)
                     {
-
-                        Improbable.Collections.List<long>? position = new Improbable.Collections.List<long>();
-
                         if (EntityManager.GlobalEntityRealm.TryGetValue(entityId, out var coreEntity))
                         {
-                            if (coreEntity is CoreEntity)
-                            {
-                                position = coreEntity.Position;
-                                // Use 'position' as needed
-                            }
+                            Console.WriteLine("[Component " + componentId + "] accessed for " + coreEntity.Key + " " + entityId + "[POSITION] = " + coreEntity.Position[0] + " " + coreEntity.Position[1] + " " + coreEntity.Position[2]);
+                            obj = coreEntity.Get<TransformState>().Value.Get();
                         }
-
-                        Console.WriteLine("[Component " + componentId + "] accessed for " + coreEntity.Key + " " + entityId + "[POSITION] = " + position[0] + " " + position[1] + " " + position[2]);
-                            TransformStateData tInit = new TransformStateData(new FixedPointVector3(position),
-                                                                    new Quaternion32(1),
-                                                                    null,
-                                                                    new Improbable.Math.Vector3d(0f, 0f, 0f),
-                                                                    new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                                                    new Improbable.Math.Vector3f(0f, 0f, 0f),
-                                                                    false,
-                                                                    0f);
+                        else
+                        {
+                            // Default TransformState moved to CoreEntity class
+                            Console.WriteLine("[Component " + componentId + "] No existing entry for TransformState, use entity.Position");
+                            TransformStateData tInit = new TransformStateData(new FixedPointVector3(new Improbable.Collections.List<long>()),
+                                new Quaternion32(1),
+                                null,
+                                new Improbable.Math.Vector3d(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                new Improbable.Math.Vector3f(0f, 0f, 0f),
+                                false,
+                                0f);
                             TransformState.Data tData = new TransformState.Data(tInit);
 
                             obj = tData;
                             EntityManager.GlobalEntityRealm[entityId].Add(tData);
+                        }
 
                     }
                     else if (componentId == 190601)
@@ -521,37 +518,23 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     else if (componentId == 1041)
                     {
                         var transformTarget = EntityManager.GlobalEntityRealm[entityId];
-                        if (transformTarget is Island matchingIsland)
-                        {
-                            var islandPosition = matchingIsland.Position;
+                        var matchingIsland = transformTarget as Island ?? Island.IslandList[0];
+                        var islandPosition = matchingIsland.Position;
 
-                            IslandState.Data data = new IslandState.Data(new IslandStateData(
-                                matchingIsland.Key,
-                                new Coordinates(islandPosition[0], islandPosition[1]+300, islandPosition[2]), // should be respawner location
-                                1f,
-                                new Vector3f(0, 0, 0),
-                                new Vector3f(200f, 200f, 200f),
-                                new Option<string>("Mr Scronge"),
-                                false,
-                                new Improbable.Collections.List<IslandDatabank>()
-                            ));
-
-                            // Add the data to the EntityManager
-                            EntityManager.GlobalEntityRealm[entityId].Add(data);
-
-                            // Set the object to the created data
-                            obj = data;
-                        }
-                    }
-                    else if (componentId == 1092)
-                    {
-                        RespawnState.Data data = new RespawnState.Data(false, new EntityId(-1), "oof", 2, 2, 5, 5, 0,
-                            new Option<ReviverData>(),
-                            new Option<PendingReviverRequestData>(
-                                new PendingReviverRequestData(1000, 0, new Option<EntityId>(new EntityId(-1)))), 100,
-                            false);
-
+                        IslandState.Data data = new IslandState.Data(new IslandStateData(
+                            matchingIsland.Key,
+                            new Coordinates(islandPosition[0], islandPosition[1]+300, islandPosition[2]), // should be respawner location
+                            1f,
+                            new Vector3f(0, 0, 0),
+                            new Vector3f(200f, 200f, 200f),
+                            new Option<string>("Mr Scronge"),
+                            false,
+                            new Improbable.Collections.List<IslandDatabank>()
+                        ));
+                        
                         EntityManager.GlobalEntityRealm[entityId].Add(data);
+
+                        // Set the object to the created data
                         obj = data;
                     }
                     else if (componentId == 1093)
@@ -602,7 +585,30 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 190607)
                     {
-                        TeleportRequestState.Data data = new TeleportRequestState.Data(new TeleportRequestStateData());
+                        var entity = EntityManager.GlobalEntityRealm[entityId];
+                        TeleportRequestState.Data data = new TeleportRequestState.Data(entity.ToVector3d(),
+                            new Option<Quaternion>(),
+                            new Option<Parent>(new Parent(Island.IslandSpawners[0].FirstRespawner, "Ancient Respawner")),
+                            1);
+                        entity.Add(data);
+                        obj = data;
+                    }
+                    else if (componentId == 1092)
+                    {
+                        var parent = Island.IslandSpawners[0].FirstRespawner;
+                        Console.WriteLine("Player will respawn at entityId " + parent.Id);
+                        RespawnState.Data data = new RespawnState.Data(true, 
+                            parent,  // waitingParent 
+                            "oof", 
+                            2, 
+                            50,
+                            5, 
+                            5,
+                            0,
+                            new Option<ReviverData>(),
+                            null,
+                            1,
+                            false);
 
                         EntityManager.GlobalEntityRealm[entityId].Add(data);
                         obj = data;

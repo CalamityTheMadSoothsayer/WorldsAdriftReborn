@@ -38,7 +38,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
             var serverStateUpdate = serverState.Value.ToUpdate().Get();
             var playerMultitoolUpdate =multitoolState.Value.ToUpdate().Get();
 
-            Console.WriteLine("ItemSlot: " + oldSlot + " -> " + newSlot);
             switch (newSlot)
             {
                 case ItemHelper.SALVAGE_REPAIR_TOOL:
@@ -82,8 +81,6 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
             entity.Update(serverStateUpdate);
             entity.Update(playerMultitoolUpdate);
 
-            // TODO: Is it ok to update these before 1211? who knows 
-            // return;
             SendOPHelper.SendComponentUpdateOp(client, entity.Id, new System.Collections.Generic.List<uint> { 1212, 2105 }, new System.Collections.Generic.List<object> { serverStateUpdate, playerMultitoolUpdate });
         }
 
@@ -153,38 +150,36 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
 
             if (clientComponentUpdate.selectedHotbar.HasValue && clientComponentUpdate.selectedHotbar.Value != serverComponentData.Value.selectedHotbar)
                 OnSelectedHotbarUpdate(serverComponentData.Value.selectedHotbar, clientComponentUpdate.selectedHotbar.Value);
-            
-            clientComponentUpdate.ApplyTo(serverComponentData);
-            
-            InteractAgentState.Update serverComponentUpdate = (InteractAgentState.Update)serverComponentData.ToUpdate();
-            
-            for (int j = 0; j < serverComponentUpdate.changeMode.Count; j++)           
+
+            // clientComponentUpdate.AddChangeMode(new ChangeMode(clientComponentUpdate.itemSlot.Value));
+            for (int j = 0; j < clientComponentUpdate.changeMode.Count; j++)           
             {
-                Console.WriteLine($"[info] mode changed; new mode: {serverComponentUpdate.changeMode[j].itemSlot}");
+                Console.WriteLine($"[info] mode changed; new mode: {clientComponentUpdate.changeMode[j].itemSlot}");
             }
             
-            for (int j = 0; j < serverComponentUpdate.useItemKeyPressed.Count; j++)
+            for (int j = 0; j < clientComponentUpdate.useItemKeyPressed.Count; j++)
             {
-                Console.WriteLine($"[info] game use item; slot: {serverComponentUpdate.useItemKeyPressed[j].itemSlot}; position: {serverComponentUpdate.useItemKeyPressed[j].sourcePosition.X}, {clientComponentUpdate.useItemKeyPressed[j].sourcePosition.Z}");
+                Console.WriteLine($"[info] game use item; slot: {clientComponentUpdate.useItemKeyPressed[j].itemSlot}; position: {clientComponentUpdate.useItemKeyPressed[j].sourcePosition.X}, {clientComponentUpdate.useItemKeyPressed[j].sourcePosition.Z}");
             }
 
-            for (int j = 0; j < serverComponentUpdate.releaseInteraction.Count; j++)
+            for (int j = 0; j < clientComponentUpdate.releaseInteraction.Count; j++)
             {
-                Console.WriteLine($"[info] game release interact; entity: {serverComponentUpdate.releaseInteraction[j].interactEntityId.Id}");
+                Console.WriteLine($"[info] game release interact; entity: {clientComponentUpdate.releaseInteraction[j].interactEntityId.Id}");
             }
 
-            for (int j = 0; j < serverComponentUpdate.interactWithObject.Count; j++)
+            for (int j = 0; j < clientComponentUpdate.interactWithObject.Count; j++)
             {
-                Console.WriteLine($"[info] game interact with object; entity: {serverComponentUpdate.interactWithObject[j].target.Id}; verb: {serverComponentUpdate.interactWithObject[j].verb}");
+                Console.WriteLine($"[info] game interact with object; entity: {clientComponentUpdate.interactWithObject[j].target.Id}; verb: {clientComponentUpdate.interactWithObject[j].verb}");
             }
 
-            for (int j = 0; j < serverComponentUpdate.useItemKeyReleased.Count; j++)
+            for (int j = 0; j < clientComponentUpdate.useItemKeyReleased.Count; j++)
             {
-                Console.WriteLine($"[info] key released; time: {serverComponentUpdate.useItemKeyReleased[j].timeButtonHeld}");
+                Console.WriteLine($"[info] key released; time: {clientComponentUpdate.useItemKeyReleased[j].timeButtonHeld}");
             }
+            
+            entity.Update(clientComponentUpdate);
 
-            entity.Update(serverComponentUpdate);
-            SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { serverComponentUpdate });
+            // SendOPHelper.SendComponentUpdateOp(player, entityId, new System.Collections.Generic.List<uint> { ComponentId }, new System.Collections.Generic.List<object> { entity.Get<InteractAgentState>().Value.ToUpdate().Get() });
         }
 
         // TODO: Make everything that gets sent through `SendComponentUpdateOp` automagically update the GameState triple dict

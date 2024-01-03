@@ -181,7 +181,7 @@ namespace WorldsAdriftRebornGameServer
                             // some components are needed in the first stage and need to be injected.
                             // Send PlayerExternalDataVisualizer required components
                             List<Structs.Structs.InterestOverride> injectedEarly =
-                                new uint[] { 1207, 1077, 1109 }
+                                new uint[] { 1207, 1077, 1109, 1092, 1093 }
                                     .Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
                             if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injectedEarly,
                                     true))
@@ -201,7 +201,7 @@ namespace WorldsAdriftRebornGameServer
                             List<uint> authoritativeComponents = new List<uint>
                             {
                                 // Clear After
-                                1212,  // 👻👻👻
+                                1212,
                                 1073,  // Spammy
                                 
                                 // Keep authority
@@ -220,7 +220,8 @@ namespace WorldsAdriftRebornGameServer
                                 2106,
                                 2002,
                                 1093, 
-                                1072
+                                1072,
+                                1041
                             }; //190602};  // 1073};
                             List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212, 1073 };
 
@@ -366,7 +367,9 @@ namespace WorldsAdriftRebornGameServer
 
                 var pos = new Improbable.Collections.List<long> { 0, y, 0 };
 
-                AncientRespawner ancient = new AncientRespawner() { Key = "Revival Chamber", Position = pos };
+                AncientRespawner ancient = new AncientRespawner(); // game was being weird with object-initializer syntax
+                ancient.Key = "Revival Chamber";
+                ancient.Position = pos;
                 ancient.Awake();
                 if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
                 {

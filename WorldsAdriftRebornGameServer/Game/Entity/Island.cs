@@ -1,5 +1,7 @@
-﻿using Bossa.Travellers.Alliance;
+﻿using Bossa.Travellers.World;
 using Improbable;
+using Improbable.Collections;
+using Improbable.Math;
 
 namespace WorldsAdriftRebornGameServer.Game.Entity
 {
@@ -13,7 +15,7 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
 
     public class Island : CoreEntity
     {
-        public static readonly List<Island> IslandList = new List<Island>();
+        public static readonly System.Collections.Generic.List<Island> IslandList = new System.Collections.Generic.List<Island>();
         public static readonly Improbable.Collections.List<IslandRespawnerAssociation> IslandSpawners = new Improbable.Collections.List<IslandRespawnerAssociation>();
 
         public override void Awake()
@@ -55,5 +57,19 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
             }
         }
 
+        public IslandStateData ToServerData()
+        {
+            var islandPosition = Position;
+
+            return new IslandStateData(
+                Key,
+                new Coordinates(islandPosition[0], islandPosition[1]+300, islandPosition[2]), // should be respawner location
+                1f,
+                new Vector3f(0, 0, 0),
+                new Vector3f(200f, 200f, 200f),
+                new Option<string>("Mr Scronge"),
+                false,
+                new Improbable.Collections.List<IslandDatabank>());
+        }
     }
 }

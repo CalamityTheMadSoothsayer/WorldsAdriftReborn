@@ -13,6 +13,8 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
             Client = peer;
         }
 
+        public override Player ToPlayer() => this;
+
         public override void Awake()
         {
             base.Awake();
