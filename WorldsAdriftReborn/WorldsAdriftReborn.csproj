@@ -24,6 +24,12 @@
       <HintPath>$(WorldsAdriftGameDir)\UnityClient@Windows_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="BossaECS">
+      <HintPath>$(WorldsAdriftGameDir)\UnityClient@Windows_Data\Managed\BossaECS.dll</HintPath>
+    </Reference>
+    <Reference Include="WASystems">
+      <HintPath>$(WorldsAdriftGameDir)\UnityClient@Windows_Data\Managed\WASystems.dll</HintPath>
+    </Reference>
     <Reference Include="Generated.Code">
       <HintPath>$(WorldsAdriftGameDir)\UnityClient@Windows_Data\Managed\Generated.Code.dll</HintPath>
       <Private>False</Private>
