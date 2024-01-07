@@ -14,6 +14,7 @@ namespace WorldsAdriftReborn.Config
         public static ConfigEntry<string> NTPServerUrl { get; set; }
         public static ConfigEntry<string> localAssetPath { get; set; }
         public static ConfigEntry<string> gameServerHost { get; set; }
+        //public static ConfigEntry<string> gameDBUrl { get; set; }
 
         public static void InitConfig()
         {
@@ -55,6 +56,7 @@ namespace WorldsAdriftReborn.Config
                                                     "GameServer_Host",
                                                     "127.0.0.1",
                                                     "The hostname or address of the game server.");
+            //gameDBUrl = modConfig.Bind<string>("DBurl", "Url", "https://nichecode.net/clientGameDB.bytes", "gameDBurl");
         }
     }
 }

@@ -7,7 +7,6 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
 {
     public class CoreEntity : Improbable.Worker.Entity
     {
-        private const int FRACTIONAL_BITS = 16; // Assuming 16 fractional bits, adjust as needed
         private static long nextEntityId = 1;
 
         public string? Key { get; set; }
@@ -25,9 +24,9 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
                 
                 position = new Improbable.Collections.List<long>
                 {
-                    (value[0] << FRACTIONAL_BITS) / FRACTIONAL_BITS,
-                    (value[1] << FRACTIONAL_BITS) / FRACTIONAL_BITS,
-                    value[2]
+                    value[0] * (long)Math.Pow(16, 3), 
+                    value[1]  * (long)Math.Pow(16, 3),
+                    value[2]  * (long)Math.Pow(16, 3)
                 };
                 
                 if (Contains<TransformState>()) 
@@ -50,7 +49,7 @@ namespace WorldsAdriftRebornGameServer.Game.Entity
         {
             Id = GenerateNextId();
             EntityManager.GlobalEntityRealm[Id] = this;
-            Console.WriteLine($"Entity {Id} of type {GetType().Name} added to GlobalEntityRealm");
+            Console.WriteLine($"[[[Entity {Id} of type {GetType().Name} added to GlobalEntityRealm with position {Position}]]]");
         }
 
         public virtual Player? ToPlayer() => null;

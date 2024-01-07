@@ -1,9 +1,10 @@
-using System.Numerics;
+﻿using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
+using WorldsAdriftRebornGameServer.Game.Components.Data;
 using WorldsAdriftRebornGameServer.Game.Entity;
 using WorldsAdriftRebornGameServer.Networking.Singleton;
 using WorldsAdriftRebornGameServer.Networking.Wrapper;
@@ -46,15 +47,12 @@ namespace WorldsAdriftRebornGameServer
         // TODO: Player=1 and Island=2, so make sure to fix that before removing below
         private static int TestIslandCount = 2;
         private static List<string> TestIslandNames;
+        private static int NumberOfAncients = 10;
 
         public static unsafe void Main( string[] args )
         {
             // TODO: Fix this awful logic
-            TestIslandNames = Directory.GetFiles((Environment.UserName == "nekoi" ? @"H:\Projects\WA\depots\322783\4112968"  : @"D:\Steam\steamapps\common\WorldsAdrift") + @"\Assets\unity")
-                                       .Where(fp => !fp.EndsWith(".manifset"))
-                                       .Select(fp =>
-                                           Path.GetFileNameWithoutExtension(fp).Replace("@island_unityclient", ""))
-                                       .ToList();
+            TestIslandNames = new IslandNameList().Names;
 
             if (TestIslandCount > TestIslandNames.Count) TestIslandCount = TestIslandNames.Count;
 
@@ -87,7 +85,6 @@ namespace WorldsAdriftRebornGameServer
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadPlayer),
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadRespawner),
                 new SyncStep(GameState.NextStateRequirement.ASSET_LOADED_RESPONSE, SyncStepLoadIslands),
-                new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddRespawner),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAddIslands),
                 new SyncStep(GameState.NextStateRequirement.ADDED_ENTITY_RESPONSE, SyncStepAckIsland)
 
@@ -326,7 +323,7 @@ namespace WorldsAdriftRebornGameServer
 
         private static void SyncStepLoadRespawner( object peer )
         {
-            for (var i = 0; i < (TestIslandCount * 2); i++)
+            for (var i = 0; i < (NumberOfAncients); i++)
             {
                 var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?", "AncientRespawner", "100");
                 if (result)
@@ -358,28 +355,6 @@ namespace WorldsAdriftRebornGameServer
 
         #region Entity Creation
 
-        private static void SyncStepAddRespawner( object peer )
-        {
-            for (var i = 0; i < (TestIslandCount * 2); i++)
-            {
-                long x = ((i / TestIslandCount) % TestIslandCount) * 100;
-                long y = ((i / (TestIslandCount * TestIslandCount)) % TestIslandCount) * 100;
-
-                var pos = new Improbable.Collections.List<long> { 0, y, 0 };
-
-                AncientRespawner ancient = new AncientRespawner(); // game was being weird with object-initializer syntax
-                ancient.Key = "Revival Chamber";
-                ancient.Position = pos;
-                ancient.Awake();
-                if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
-                {
-                    Console.WriteLine("[AR ADDED]");
-                    continue;
-                }
-                Console.WriteLine("ERROR - Unable to send AncientRespawner AddEntity for: " + ancient.Id);
-            }
-        }
-
         // TODO: Refactor to SyncStepAddEntities<T> for globally loaded entities, possibly using some other utility
         private static void SyncStepAddIslands( object peer )
         {
@@ -387,13 +362,13 @@ namespace WorldsAdriftRebornGameServer
 
             var stepSize = 999;
 
-            for (var i = 0; i < TestIslandCount; i++)
+            for (var i = 1; i < (TestIslandCount + 1); i++) // started at 1 to avoid 0,0,0 for debugging
             {
                 long x = i  * stepSize;
                 long y = i  * stepSize;
 
 
-                var islandName = TestIslandNames[i];
+                var islandName = TestIslandNames[i-1];
 
                 Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
                 var pos = new Improbable.Collections.List<long> { x, y, 0 };
@@ -405,9 +380,27 @@ namespace WorldsAdriftRebornGameServer
 
 
                 if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, Island.IslandList.Last().Id, islandName + "@Island", "notNeeded?"))
-                    continue;
+                {
+                    pos[1] = y + 200;
 
-                failed.Add(islandName);
+                    AncientRespawner ancient = new AncientRespawner(); // game was being weird with object-initializer syntax
+                    ancient.Key = "Revival Chamber";
+                    ancient.Position = pos;
+                    ancient.Awake();
+                    if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, ancient.Id, "AncientRespawner", "notNeeded?"))
+                    {
+                        Console.WriteLine("[AR ADDED]");
+                    }
+                    else
+                    {
+                        Console.WriteLine("ERROR - Unable to send AncientRespawner AddEntity for: " + ancient.Id);
+                    }
+                    continue;
+                }
+                else
+                {
+                    failed.Add(islandName);
+                }
             }
 
             if (failed.Count == 0)
@@ -420,10 +413,10 @@ namespace WorldsAdriftRebornGameServer
         {
             // client ack'ed island spawning instruction (info by sdk, does not mean it truly spawned).
             Console.WriteLine("INFO - Requesting to spawn player ");
-            long x = 1 * 100;
-            long y = ((1 / (TestIslandCount * TestIslandCount)) % TestIslandCount) * 100;
+            long x = 999;
+            long y = 1199;
 
-            var pos = new Improbable.Collections.List<long> { 0, y, 0 };
+            var pos = new Improbable.Collections.List<long> { x, y, 0 };
 
             Player player = new Player((ENetPeerHandle) peer) { Key = "player", Position = pos  };
             player.Awake();

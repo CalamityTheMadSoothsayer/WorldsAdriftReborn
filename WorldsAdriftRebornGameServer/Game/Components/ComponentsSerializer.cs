@@ -119,11 +119,14 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     }
                     else if (componentId == 8065)
                     {
-                        Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
-                        obj = bData;
-                        if (entityId != 6)
+                        if (EntityManager.GlobalEntityRealm.TryGetValue(entityId, out var coreEntity))
                         {
-                            EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                            if(coreEntity.Key != "Player")
+                            {
+                                Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
+                                obj = bData;
+                                EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                            }
                         }
                     }
                     else if (componentId == 190602)
@@ -131,7 +134,11 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         if (EntityManager.GlobalEntityRealm.TryGetValue(entityId, out var coreEntity))
                         {
                             Console.WriteLine("[Component " + componentId + "] accessed for " + coreEntity.Key + " " + entityId + "[POSITION] = " + coreEntity.Position[0] + " " + coreEntity.Position[1] + " " + coreEntity.Position[2]);
-                            obj = coreEntity.Get<TransformState>().Value.Get();
+                            TransformState.Data tData = coreEntity.Get<TransformState>().Value.Get();
+
+                            obj = tData;
+
+                            EntityManager.GlobalEntityRealm[entityId].Add(tData);
                         }
                         else
                         {
@@ -549,11 +556,13 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         // creates a system.collections list
                         var associatedRespawners = Island.IslandSpawners
                             .Where(association => association.IslandId == entityId)
-                            .SelectMany(association => new[] { association.FirstRespawner, association.SecondRespawner })
+                            .SelectMany(association => new[] { association.FirstRespawner })
                             .ToList();
 
                         // need Improbable.Collections.List here (simpler way?)
-                        var improbableEntityIdList = new Improbable.Collections.List<Improbable.EntityId>(associatedRespawners);
+                        var improbableEntityIdList = new Improbable.Collections.List<EntityId>(associatedRespawners);
+
+                        var islands = Island.IslandList;
 
                         // todo: Modify the values as needed based on your data structure
                         IslandFabricState.Data data = new IslandFabricState.Data(new IslandFabricStateData(
@@ -563,9 +572,9 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             improbableEntityIdList,
                             new Option<EntityId>(associatedRespawners.FirstOrDefault()),
                             new Option<string>(""),
-                            Bossa.Travellers.Biomes.BiomeType.Biome1,
+                            Bossa.Travellers.Biomes.BiomeType.Biome3,
                             false,
-                            new Option<Coordinates>(new Coordinates(0, 0, 0)),
+                            new Option<Coordinates>(new Coordinates(islands[0].Position[0], islands[0].Position[1], 0)), // seeing if this is what is moving islands to 0,0,0
                             new Option<double>(0),
                             new Option<double>(0)));
 
