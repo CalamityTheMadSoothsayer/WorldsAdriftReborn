@@ -15,14 +15,18 @@ namespace WorldsAdriftServer.Handlers.Authentication
 
                 if (reqToken != null)
                 {
-                    SteamAuthResponseToken respToken = new SteamAuthResponseToken("superCoolToken", "777", "999", true);
+                    // i think this token hats usernames with spaces
+
+
+                    SteamAuthResponseToken respToken = new SteamAuthResponseToken("WarToken", RequestRouterHandler.userId, "999", true);
                     respToken.screenName = playerName;
+                    respToken.playerId = RequestRouterHandler.userId;
 
                     JObject respO = (JObject)JToken.FromObject(respToken);
                     if (respO != null)
                     {
                         HttpResponse resp = new HttpResponse();
-                        resp.SetBegin(200);
+                        resp.SetBegin((int)RequestRouterHandler.status);
                         resp.SetBody(respO.ToString());
 
                         session.SendResponseAsync(resp);

@@ -376,6 +376,8 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             break;
 
                         case 1211:
+                            // used for interacting with world object. Will need storage for this as well.
+                            // whether that store is in the player entity or elsewhere.
                             InteractAgentState.Data iaData = new InteractAgentState.Data(new InteractAgentStateData(true,
                                                                                                             new EntityId(0),
                                                                                                             new EntityId(0),
@@ -610,6 +612,11 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         #endregion
 
                         #region 9000s
+                        case 9003:
+                            NewChatSpeaker.Data ncs = new NewChatSpeaker.Data(new NewChatSpeakerData(new EntityId(coreEntityComp.Id)));
+                            obj = ncs;
+                            EntityManager.GlobalEntityRealm[entityId].Add(ncs);
+                            break;
                         case 9005:
                             SocialWorkerId.Data wiData = new SocialWorkerId.Data(new SocialWorkerIdData("workerId"));
 

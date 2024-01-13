@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using WorldsAdriftRebornGameServer.DLLCommunication;
 using WorldsAdriftRebornGameServer.Game;
 using WorldsAdriftRebornGameServer.Game.Components;
@@ -128,6 +129,9 @@ namespace WorldsAdriftRebornGameServer
                 }
                 GameState.NextStateRequirement nextStateRequirement =
                     GameState.Instance.WorldState[currentChunkIndex][currentPlayerSyncIndex].NextStateRequirement;
+
+                Console.WriteLine($"Channel: {packet->Channel}, UserData: {(packet->UserData != null ? Encoding.UTF8.GetString(new Span<byte>(packet->UserData, (int)packet->DataLength)) : "null")}");
+
                 switch (packet->Channel)
                 {
                     case (int)EnetLayer.ENetChannel.ASSET_LOAD_REQUEST_OP when

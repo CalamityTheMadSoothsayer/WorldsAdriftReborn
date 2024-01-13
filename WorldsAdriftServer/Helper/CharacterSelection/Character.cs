@@ -1,4 +1,5 @@
-﻿using WorldsAdriftServer.Objects.CharacterSelection;
+﻿using WorldsAdriftServer.Handlers;
+using WorldsAdriftServer.Objects.CharacterSelection;
 
 namespace WorldsAdriftServer.Helper.CharacterSelection
 {
@@ -9,46 +10,45 @@ namespace WorldsAdriftServer.Helper.CharacterSelection
             Dictionary<CharacterSlotType, ItemData> cosmetics = new Dictionary<CharacterSlotType, ItemData>();
             CharacterUniversalColors colors = new CharacterUniversalColors();
 
-            Random r = new Random();
-            int num = r.Next(0, CustomisationSettings.skinColors.Length);
+            // stopping random character creation, interfering with character comparison
 
-            colors.SkinColor = CustomisationSettings.skinColors[num];
-            colors.LipColor = CustomisationSettings.lipColors[num];
-            colors.HairColor = CustomisationSettings.hairColors[r.Next(0, CustomisationSettings.hairColors.Length)];
+            colors.SkinColor = CustomisationSettings.skinColors[0];
+            colors.LipColor = CustomisationSettings.lipColors[0];
+            colors.HairColor = CustomisationSettings.hairColors[0];
 
             cosmetics.Add(CharacterSlotType.Head, new ItemData(
                                                                 "1",
-                                                                CustomisationSettings.starterHeadItems.Keys.ToList<string>()[r.Next(0, CustomisationSettings.starterHeadItems.Keys.Count)],
+                                                                CustomisationSettings.starterHeadItems.Keys.ToList<string>()[0],
                                                                 new ColorProperties(
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)],
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)]),
+                                                                                    CustomisationSettings.clothingColors[0],
+                                                                                    CustomisationSettings.clothingColors[0]),
                                                                 100f));
             cosmetics.Add(CharacterSlotType.Body, new ItemData(
                                                                 "2",
-                                                                CustomisationSettings.starterTorsoItems.Keys.ToList<string>()[r.Next(0, CustomisationSettings.starterTorsoItems.Keys.Count)],
+                                                                CustomisationSettings.starterTorsoItems.Keys.ToList<string>()[0],
                                                                 new ColorProperties(
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)],
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)]),
+                                                                                    CustomisationSettings.clothingColors[0],
+                                                                                    CustomisationSettings.clothingColors[0]),
                                                                 100f));
             cosmetics.Add(CharacterSlotType.Feet, new ItemData(
                                                                 "3",
-                                                                CustomisationSettings.starterLegItems.Keys.ToList<string>()[r.Next(0, CustomisationSettings.starterLegItems.Keys.Count)],
+                                                                CustomisationSettings.starterLegItems.Keys.ToList<string>()[0],
                                                                 new ColorProperties(
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)],
-                                                                                    CustomisationSettings.clothingColors[r.Next(0, 7)]),
+                                                                                    CustomisationSettings.clothingColors[0],
+                                                                                    CustomisationSettings.clothingColors[0]),
                                                                 100f));
             cosmetics.Add(CharacterSlotType.Face, new ItemData(
                                                                 "4",
-                                                                CustomisationSettings.starterFaceItems.Keys.ToList<string>()[r.Next(0, CustomisationSettings.starterFaceItems.Keys.Count)],
+                                                                CustomisationSettings.starterFaceItems.Keys.ToList<string>()[0],
                                                                 default(ColorProperties),
                                                                 100f));
             cosmetics.Add(CharacterSlotType.FacialHair, new ItemData(
                                                                 "5",
-                                                                CustomisationSettings.starterFacialHairItems.Keys.ToList<string>()[r.Next(0, CustomisationSettings.starterFacialHairItems.Keys.Count)],
+                                                                CustomisationSettings.starterFacialHairItems.Keys.ToList<string>()[0],
                                                                 default(ColorProperties),
                                                                 100f));
 
-            return new CharacterCreationData(1, "valid-UIDs-have-at-least-one-", characterName, "serverName?", serverIdentifier, cosmetics, colors, true, false, false);
+            return new CharacterCreationData(1, RequestRouterHandler.sessionId.ToString(), characterName, "serverName?", serverIdentifier, cosmetics, colors, true, false, false);
         }
         /*
          * generates a character without cosmetics which reflects as an empty slot in the character select screen.
@@ -66,7 +66,10 @@ namespace WorldsAdriftServer.Helper.CharacterSelection
             colors.LipColor = CustomisationSettings.lipColors[num];
             colors.HairColor = CustomisationSettings.hairColors[r.Next(0, CustomisationSettings.hairColors.Length)];
 
-            return new CharacterCreationData(1, "UID", characterName, "serverName?", serverIdentifier, null, colors, true, false, false);
+            // generate character uid
+            RequestRouterHandler.characterUID = Guid.NewGuid().ToString();
+            // find a way to let server owners set servername
+            return new CharacterCreationData(1, RequestRouterHandler.characterUID, characterName, "serverName?", serverIdentifier, null, colors, true, true, true);
         }
     }
 }
