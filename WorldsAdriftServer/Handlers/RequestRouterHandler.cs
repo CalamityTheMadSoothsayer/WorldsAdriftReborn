@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Xml;
+using System.Xml.Linq;
 using NetCoreServer;
 using Newtonsoft.Json.Linq;
 using WorldsAdriftServer.Handlers.Authentication;
@@ -23,6 +24,14 @@ namespace WorldsAdriftServer.Handlers
         public static HttpStatusCode status;
         public static List<CharacterCreationData> characterList = new List<CharacterCreationData>();
         public static CharacterListResponse CharacterResponse = new CharacterListResponse(characterList);
+
+        public static string serverName;
+        public static string dbName;
+        public static string username;
+        public static string password;
+
+        public static string desiredServerName;
+        public static string serverIdentity;
 
         public RequestRouterHandler( HttpServer server ) : base(server) 
         {
@@ -54,8 +63,14 @@ namespace WorldsAdriftServer.Handlers
                     // Extract userKey
                     string? userKey = requestBody["steamCredential"]?["userKey"]?.ToString()?.Trim();
 
+                    if(userKey != null)
+                    {
+                        sessionId = this.Id.ToString();
+                        Console.WriteLine($"[SESSION ID] {sessionId}");
+                    }
+
                     // create session and begin storing user
-                    DataStorage.StoreUserData(sessionId, userKey);
+                    DataStorage.StoreUserData(this, sessionId, userKey);
 
                     // Call the authentication handler with the extracted data
                     SteamAuthenticationHandler.HandleAuthRequest(this, request, userKey);
@@ -76,25 +91,30 @@ namespace WorldsAdriftServer.Handlers
                 {
                     CharacterNameHandler.SaveCharacterUid(request, userId, this);
                 }
+                else if (request.Method == "POST" && request.Url.Contains("character/0.3.32.0.1880/steam/1234"))
+                {
+                    CharacterDetailHandler.SaveDetails(this, userId, request);
+                }
                 else if(request.Method == "GET" && request.Url == "/deploymentStatus")
                 {
-                    DeploymentStatusHandler.HandleDeploymentStatusRequest(this, request, "awesome community server", "community_server", 0);
+                    DeploymentStatusHandler.HandleDeploymentStatusRequest(this, request, desiredServerName, "community_server", 0);
                 }
                 else if(request.Method == "GET" && request.Url == "/authorizeCharacter")
                 {
                     CharacterAuthHandler.HandleCharacterAuth(this, request);
                 }
-                else if(request.Method == "POST" && request.Url.Contains("/character/") && request.Url.Contains("/steam/1234/"))
-                {
-                    CharacterSaveHandler.HandleCharacterSave(this, request);
-                }
+                //else if(request.Method == "POST" && request.Url.Contains("/character/") && request.Url.Contains("/steam/1234/"))
+                //{
+                //    CharacterSaveHandler.HandleCharacterSave(this, request);
+                //}
                 else
                 {
                     Console.WriteLine($"URL unhandled for request: \n\r {request}");
-                    // this is just to clear out the request in case someone has sent something malicious to the server
-                    // its already in memory when they send it, but lets not keep it there.
-                    request = null;
                 }
+            }
+            else
+            {
+                Console.WriteLine("Config failed to load");
             }
         }
 
@@ -113,22 +133,48 @@ namespace WorldsAdriftServer.Handlers
             try
             {
                 // Specify the full path to the XML file
-                string xmlFilePath = "./Home/WarWebServer/db.xml";
+                string xmlFilePath = "./db.xml";
 
                 // Load the XML file
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.Load(xmlFilePath);
 
                 // Extract database connection details
-                string serverName = xmlDoc.SelectSingleNode("/DatabaseConfiguration/ServerName").InnerText;
-                string dbName = xmlDoc.SelectSingleNode("/DatabaseConfiguration/DatabaseName").InnerText;
-                string username = xmlDoc.SelectSingleNode("/DatabaseConfiguration/Username").InnerText;
-                string password = xmlDoc.SelectSingleNode("/DatabaseConfiguration/Password").InnerText;
+                XmlNode serverNode = xmlDoc.SelectSingleNode("/configuration/database/servername");
+                XmlNode dbNode = xmlDoc.SelectSingleNode("/configuration/database/dbname");
+                XmlNode userNode = xmlDoc.SelectSingleNode("/configuration/database/username");
+                XmlNode passwordNode = xmlDoc.SelectSingleNode("/configuration/database/password");
+                XmlNode dServerName = xmlDoc.SelectSingleNode("/configuration/database/desiredservername");
+                XmlNode dServerId = xmlDoc.SelectSingleNode("/configuration/database/serveridentity");
 
-                return true;
+                // Check for null before accessing node values
+                if (serverNode != null && dbNode != null && userNode != null && passwordNode != null)
+                {
+                    serverName = serverNode.InnerText;
+                    dbName = dbNode.InnerText;
+                    username = userNode.InnerText;
+                    password = passwordNode.InnerText;
+
+                    desiredServerName = dServerName.InnerText;
+                    serverIdentity = dServerId.InnerText;
+
+                    Console.WriteLine($"Loaded serverName: {RequestRouterHandler.serverName}");
+                    Console.WriteLine($"Loaded dbName: {RequestRouterHandler.dbName}");
+                    Console.WriteLine($"Loaded username: {RequestRouterHandler.username}");
+                    Console.WriteLine($"Loaded password: {RequestRouterHandler.password}");
+
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("One or more nodes are missing in the XML file.");
+                    return false;
+                }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error loading config: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return false;
             }
         }
