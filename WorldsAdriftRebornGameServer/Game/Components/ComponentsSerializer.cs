@@ -68,7 +68,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                     {
                         #region 1000s
                         case 1003:
-                            PlayerCraftingInteractionState.Data pcisData = new PlayerCraftingInteractionState.Data(new EntityId(1), true);
+                            PlayerCraftingInteractionState.Data pcisData = new PlayerCraftingInteractionState.Data(new EntityId(), true);
 
                             obj = pcisData;
 
@@ -76,7 +76,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             break;
 
                         case 1005:
-                            CraftingStationClientState.Data csData = new CraftingStationClientState.Data(new CraftingStationClientStateData("schematicId",
+                            CraftingStationClientState.Data csData = new CraftingStationClientState.Data(new CraftingStationClientStateData("Glider",
                                                                                                                                     "owner",
                                                                                                                                     new Improbable.Collections.List<SlottedMaterial> { },
                                                                                                                                     new Improbable.Collections.List<Cipher> { },
@@ -241,13 +241,13 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             break;
 
                         case 1086:
-                            PlayerName.Data pData = new PlayerName.Data(new PlayerNameData("sp00ktober", "id", "cUid", "bossaToken", "bossaId"));
+                            PlayerName.Data pData = new PlayerName.Data(new PlayerNameData("76561198084502936", "1", "9231e20b-d227-4828-b908-15179c8996f6", "token", "123"));
 
                             obj = pData;
                             EntityManager.GlobalEntityRealm[entityId].Add(pData);
                             break;
                         case 1087:
-                            PlayerPermissionsState.Data ppsData = new PlayerPermissionsState.Data(Role.NonAdmin);
+                            PlayerPermissionsState.Data ppsData = new PlayerPermissionsState.Data(Role.Admin);
 
                             obj = ppsData;
 
@@ -255,13 +255,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                             break;
                         case 1088:
                             PlayerPropertiesState.Data ppData = new PlayerPropertiesState.Data(new PlayerPropertiesStateData(new Map<string, string> { },
-                                                                                                                    new Map<string, string>
-                                                                                                                    {
-                                                                                                                        {"Head", "hair_dreads" },
-                                                                                                                        {"Body", "torso_ponchoVariantB" },
-                                                                                                                        {"Feet", "legs_wrap" },
-                                                                                                                        {"Face", "face_C" }
-                                                                                                                    },
+                                                                                                                    new Map<string, string> { },
                                                                                                                     new Improbable.Collections.List<string> { },
                                                                                                                     false));
                             obj = ppData;
@@ -466,9 +460,9 @@ namespace WorldsAdriftRebornGameServer.Game.Components
 
                         #region 1300s
                         case 1332:
-                            KnowledgeServerState.Data ksData = new KnowledgeServerState.Data(new KnowledgeServerStateData(1,
+                            KnowledgeServerState.Data ksData = new KnowledgeServerState.Data(new KnowledgeServerStateData(400,
                                                                                                                 new Map<string, int> { },
-                                                                                                                1,
+                                                                                                                400,
                                                                                                                 new Map<string, int> { }));
                             obj = ksData;
 
@@ -601,11 +595,39 @@ namespace WorldsAdriftRebornGameServer.Game.Components
                         case 8065:
                             if (isCoreEntity)
                             {
-                                if (coreEntityComp.Key != "Player")
+                                if (coreEntityComp.Key == "player")
                                 {
                                     Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
                                     obj = bData;
                                     EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                                }
+                                else if (coreEntityComp.Key == "Island")
+                                {
+                                    Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Island"));
+                                    obj = bData;
+                                    EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                                }
+                                else if (coreEntityComp.Key == "AncientRespawner")
+                                {
+                                    Blueprint.Data bData = new Blueprint.Data(new BlueprintData("AncientRespawner"));
+                                    obj = bData;
+                                    EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                                }
+                                else if (coreEntityComp.Key == "Revival Chamber")
+                                {
+                                    Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Revival Chamber"));
+                                    obj = bData;
+                                    EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                                }
+                                if (coreEntityComp.Key == "Player")
+                                {
+                                    Blueprint.Data bData = new Blueprint.Data(new BlueprintData("Player"));
+                                    obj = bData;
+                                    EntityManager.GlobalEntityRealm[entityId].Add(bData);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("[8065] " + coreEntityComp.Key);
                                 }
                             }
                             break;

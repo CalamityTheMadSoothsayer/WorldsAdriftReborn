@@ -55,7 +55,8 @@ namespace WorldsAdriftRebornGameServer
             // TODO: Fix this awful logic
             TestIslandNames = new IslandNameList().Names;
 
-            if (TestIslandCount > TestIslandNames.Count) TestIslandCount = TestIslandNames.Count;
+            if (TestIslandCount > TestIslandNames.Count)
+                TestIslandCount = TestIslandNames.Count;
 
             Console.CancelKeyPress += delegate
             {
@@ -101,7 +102,7 @@ namespace WorldsAdriftRebornGameServer
                     SyncPlayers();
                     continue;
                 }
-                
+
                 SyncHighPriority(packet);
                 SyncLowPriority(packet);
 
@@ -115,7 +116,7 @@ namespace WorldsAdriftRebornGameServer
         }
 
         #region Packet Processing
-        private static unsafe void SyncHighPriority(EnetLayer.ENetPacket_Wrapper* packet)
+        private static unsafe void SyncHighPriority( EnetLayer.ENetPacket_Wrapper* packet )
         {
             // Work on packets that are relevant to progress in sync state
             foreach (KeyValuePair<ENetPeerHandle, Dictionary<int, PlayerSyncStatus>> keyValuePair in PeerManager.Instance.playerState)
@@ -145,7 +146,7 @@ namespace WorldsAdriftRebornGameServer
             }
         }
 
-        private static unsafe void SyncLowPriority(EnetLayer.ENetPacket_Wrapper* packet)
+        private static unsafe void SyncLowPriority( EnetLayer.ENetPacket_Wrapper* packet )
         {
             foreach (KeyValuePair<ENetPeerHandle, Dictionary<int, PlayerSyncStatus>> keyValuePair in PeerManager
                          .Instance.playerState)
@@ -153,148 +154,149 @@ namespace WorldsAdriftRebornGameServer
                 switch (packet->Channel)
                 {
                     case (int)EnetLayer.ENetChannel.SEND_COMPONENT_INTEREST:
-                    {
-                        long entityId = 0;
-                        uint interestCount = 0;
-                        Structs.Structs.InterestOverride* interests =
-                            (Structs.Structs.InterestOverride*)new IntPtr(0);
-
-                        if (!EnetLayer.PB_EXP_SendComponentInterest_Deserialize(packet->Data,
-                                (int)packet->DataLength, &entityId, &interests, &interestCount))
                         {
-                            Console.WriteLine("ERROR -Failed to deserialize ComponentInterest message from game.");
-                            break;
-                        }
-                        
-                        Console.WriteLine("[info] game requests components for entity id: " + entityId);
+                            long entityId = 0;
+                            uint interestCount = 0;
+                            Structs.Structs.InterestOverride* interests =
+                                (Structs.Structs.InterestOverride*)new IntPtr(0);
 
-                        bool isEntityInPlayerList = Player.PlayerList.Contains(entityId);
-                        bool isPeerNotInClientSetupState = !PeerManager.Instance.clientSetupState.Contains(keyValuePair.Key);
-
-                        if (isEntityInPlayerList && isPeerNotInClientSetupState)
-                        {
-                            // a player entity requests components for the first time, we need to setup a few things to make him work properly
-                            // some of this might not be needd anymore in the future once we sorted out a few things.
-                            //
-                            // we can make use of the fact that the game requests components for players in two stages, where the second one will terminate the loading screen of the client.
-                            // the second stage needs a few components setup properly, for this we need to inject one component and call auth changed for a few others once.
-
-                            // some components are needed in the first stage and need to be injected.
-                            // Send PlayerExternalDataVisualizer required components
-                            List<Structs.Structs.InterestOverride> injectedEarly =
-                                new uint[] { 1207, 1077, 1109, 1092, 1093 }
-                                    .Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
-                            if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injectedEarly,
-                                    true))
+                            if (!EnetLayer.PB_EXP_SendComponentInterest_Deserialize(packet->Data,
+                                    (int)packet->DataLength, &entityId, &interests, &interestCount))
                             {
-                                continue;
+                                Console.WriteLine("ERROR -Failed to deserialize ComponentInterest message from game.");
+                                break;
                             }
 
-                            // then send what the game requested
-                            if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, interests,
-                                    interestCount, true))
-                            {
-                                continue;
-                            }
+                            Console.WriteLine("[info] game requests components for entity id: " + entityId);
 
-                            // TODO: Document these
-                            // 1242 - LocationState - Might only be relevant for OTHER players! See RelativeLocationVisualizer for more info.
-                            List<uint> authoritativeComponents = new List<uint>
+                            bool isEntityInPlayerList = Player.PlayerList.Contains(entityId);
+                            bool isPeerNotInClientSetupState = !PeerManager.Instance.clientSetupState.Contains(keyValuePair.Key);
+
+                            if (isEntityInPlayerList && isPeerNotInClientSetupState)
                             {
-                                // Clear After
-                                1212,
-                                1073,  // Spammy
+                                // a player entity requests components for the first time, we need to setup a few things to make him work properly
+                                // some of this might not be needd anymore in the future once we sorted out a few things.
+                                //
+                                // we can make use of the fact that the game requests components for players in two stages, where the second one will terminate the loading screen of the client.
+                                // the second stage needs a few components setup properly, for this we need to inject one component and call auth changed for a few others once.
+
+                                // some components are needed in the first stage and need to be injected.
+                                // Send PlayerExternalDataVisualizer required components
+                                List<Structs.Structs.InterestOverride> injectedEarly =
+                                    new uint[] { 1092, 1093, 1080, 1082, 6908, 2105, 2106, 2002 }
+                                        .Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
+                                if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injectedEarly,
+                                        true))
+                                {
+                                    continue;
+                                }
+
+                                // then send what the game requested
+                                if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, interests,
+                                        interestCount, true))
+                                {
+                                    continue;
+                                }
+
+                                // TODO: Document these
+                                // 1242 - LocationState - Might only be relevant for OTHER players! See RelativeLocationVisualizer for more info.
+                                List<uint> authoritativeComponents = new List<uint>
+                                {
+                                    // Clear After
+                                    // 1212,
+                                    //  1073,  // Spammy
                                 
-                                // Keep authority
-                                1040,
-                                1080,
-                                8050,
-                                8051,
-                                6908,
-                                1260,
-                                1097,
-                                1003,
-                                1241,
-                                1082,
-                                1211,
-                                2105,
-                                2106,
-                                2002,
-                                1093, 
-                                1072,
-                                1041
-                            }; //190602};  // 1073};
-                            List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212, 1073 };
+                                    // Keep authority
+                                    1003,
+                                    1005,
+                                    1041,
+                                    1072,
+                                    // 1080,
+                                    // 1082,
+                                    1093,
+                                    1097,
+                                    1211,
+                                    1241,
+                                    1242,
+                                    1260,
+                                    // 2002,
+                                    // 2105,
+                                    // 2106,
+                                    6908,
+                                    8050,
+                                    8051,
+                                }; //190602};  // 1073};
+                                List<uint> authoritativeComponentsClearAfter = new List<uint> { 1212, 1073, 6908 };
 
-                            // for some reason the game does not always request component 1080 (SchematicsLearnerGSimState), but its reader is required in InventoryVisualiser
-                            List<Structs.Structs.InterestOverride> injected = authoritativeComponents
-                                                                              .Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
+                                // for some reason the game does not always request component 1080 (SchematicsLearnerGSimState), but its reader is required in InventoryVisualiser
+                                List<Structs.Structs.InterestOverride> injected = authoritativeComponents
+                                                                                  .Select(p => new Structs.Structs.InterestOverride(p, 1)).ToList();
 
-                            if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injected, true))
+                                if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, injected, true))
+                                {
+                                    continue;
+                                }
+
+                                // now send auth change
+                                if (!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId,
+                                        authoritativeComponents))
+                                {
+                                    continue;
+                                }
+
+                                // clear auth on select components. some need temporary authority to initialise?
+                                if (!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId,
+                                        authoritativeComponentsClearAfter, false))
+                                {
+                                    continue;
+                                }
+
+                                // now add player to clientSetupState
+                                PeerManager.Instance.clientSetupState.Add(keyValuePair.Key);
+                            }
+                            else
                             {
-                                continue;
+                                // player already setup or another entity requested components, so just process them
+                                if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, interests,
+                                        interestCount, true))
+                                {
+                                    continue;
+                                }
                             }
 
-                            // now send auth change
-                            if (!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId,
-                                    authoritativeComponents))
-                            {
-                                continue;
-                            }
 
-                            // clear auth on select components. some need temporary authority to initialise?
-                            if (!SendOPHelper.SendAuthorityChangeOp(keyValuePair.Key, entityId,
-                                    authoritativeComponentsClearAfter, false))
-                            {
-                                continue;
-                            }
-
-                            // now add player to clientSetupState
-                            PeerManager.Instance.clientSetupState.Add(keyValuePair.Key);
-                        }
-                        else
-                        {
-                            // player already setup or another entity requested components, so just process them
-                            if (!SendOPHelper.SendAddComponentOp(keyValuePair.Key, entityId, interests,
-                                    interestCount, true))
-                            {
-                                continue;
-                            }
-                        }
-                        
-
-                        break;
-                    }
-                    case (int)EnetLayer.ENetChannel.COMPONENT_UPDATE_OP:
-                    {
-                        long entityId = 0;
-                        uint updateCount = 0;
-                        Structs.Structs.ComponentUpdateOp* update =
-                            (Structs.Structs.ComponentUpdateOp*)new IntPtr(0);
-
-                        if (!EnetLayer.PB_EXP_ComponentUpdateOp_Deserialize(packet->Data, (int)packet->DataLength, &entityId, &update, &updateCount) || updateCount <= 0)
-                        {
-                            Console.WriteLine("ERROR - Failed to deserialize ComponentUpdate message from game, or empty message.");
                             break;
                         }
-                        
-                        for (int i = 0; i < updateCount; i++)
+                    case (int)EnetLayer.ENetChannel.COMPONENT_UPDATE_OP:
                         {
-                            var componentId = update[i].ComponentId;
-                            ComponentStateManager.Instance.HandleComponentUpdate(keyValuePair.Key, entityId, componentId, update[i].ComponentData, update[i].DataLength);
-                            
-                            if (componentId is 1073)
-                                continue; // You can block more very easily : `componentId is 1073 or 1074 or 1075 or 1075 ...`
-                            
-                            Console.WriteLine("INFO - Client " + entityId + " requested ComponentUpdate " + componentId);
+                            long entityId = 0;
+                            uint updateCount = 0;
+                            Structs.Structs.ComponentUpdateOp* update =
+                                (Structs.Structs.ComponentUpdateOp*)new IntPtr(0);
+
+                            if (!EnetLayer.PB_EXP_ComponentUpdateOp_Deserialize(packet->Data, (int)packet->DataLength, &entityId, &update, &updateCount) || updateCount <= 0)
+                            {
+                                Console.WriteLine("ERROR - Failed to deserialize ComponentUpdate message from game, or empty message.");
+                                break;
+                            }
+
+                            for (int i = 0; i < updateCount; i++)
+                            {
+                                var componentId = update[i].ComponentId;
+                                ComponentStateManager.Instance.HandleComponentUpdate(keyValuePair.Key, entityId, componentId, update[i].ComponentData, update[i].DataLength);
+
+                                if (componentId is 1073)
+                                    continue; // You can block more very easily : `componentId is 1073 or 1074 or 1075 or 1075 ...`
+
+                                Console.WriteLine("INFO - Client " + entityId + " requested ComponentUpdate " + componentId);
+                            }
+
+                            break;
                         }
-                        
-                        break;
-                    }
                 }
             }
         }
-        
+
         // dont wait for GetOplist and then for the Dispatch call as we are the ones who would dispatch the work anyways.
         // sync up players
         private static void SyncPlayers()
@@ -312,7 +314,7 @@ namespace WorldsAdriftRebornGameServer
                 }
             }
         }
-        
+
         #endregion
         #region Sync Steps
 
@@ -321,7 +323,8 @@ namespace WorldsAdriftRebornGameServer
         private static void SyncStepLoadPlayer( object peer )
         {
             var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?", "Traveller", "Player");
-            if (result) return;
+            if (result)
+                return;
             Console.WriteLine("ERROR - Unable to send Player AssetLoadRequest");
         }
 
@@ -347,11 +350,13 @@ namespace WorldsAdriftRebornGameServer
                 var islandName = TestIslandNames[i];
                 var result = SendOPHelper.SendAssetLoadRequestOP((ENetPeerHandle)peer, "notNeeded?",
                     islandName + "@Island", "notNeeded?");
-                if (result) continue;
+                if (result)
+                    continue;
                 failed.Add(islandName);
             }
 
-            if (failed.Count == 0) return;
+            if (failed.Count == 0)
+                return;
             Console.WriteLine("ERROR - Unable to send Island AssetLoadRequest for: " + string.Join(", ", failed));
         }
 
@@ -368,11 +373,11 @@ namespace WorldsAdriftRebornGameServer
 
             for (var i = 1; i < (TestIslandCount + 1); i++) // started at 1 to avoid 0,0,0 for debugging
             {
-                long x = i  * stepSize;
-                long y = i  * stepSize;
+                long x = i * stepSize;
+                long y = i * stepSize;
 
 
-                var islandName = TestIslandNames[i-1];
+                var islandName = TestIslandNames[i - 1];
 
                 Console.WriteLine("GENERATING LOCATIONS FOR ISLANDS");
                 var pos = new Improbable.Collections.List<long> { x, y, 0 };
@@ -422,11 +427,12 @@ namespace WorldsAdriftRebornGameServer
 
             var pos = new Improbable.Collections.List<long> { x, y, 0 };
 
-            Player player = new Player((ENetPeerHandle) peer) { Key = "player", Position = pos  };
+            Player player = new Player((ENetPeerHandle)peer) { Key = "player", Position = pos };
             player.Awake();
 
-            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, player.Id, "Traveller", "Player")) return;
-        
+            if (SendOPHelper.SendAddEntityOP((ENetPeerHandle)peer, player.Id, "Traveller", "Player"))
+                return;
+
             Console.WriteLine("ERROR - Unable to send Player AddEntity for: " + player.Id);
         }
 

@@ -61,7 +61,7 @@ namespace WorldsAdriftRebornGameServer.Game.Components.State
                 entity.Update(newRefData);
             }
 
-            SendOPHelper.SendComponentUpdateOp(player, entityId, new List<uint> { ComponentId }, new List<object> { serverComponentUpdate });
+            entity.Update(clientComponentUpdate);
         }
     }
 }
